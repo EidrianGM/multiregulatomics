@@ -14,13 +14,21 @@ completeNdedup <- function(DF){
 saveTablesTsvExc <- function(DF,outdir){
   outname <- deparse(substitute(DF))
   if (class(DF) == "data.frame"){
-    outFile <- paste0(file.path(outdir,outname),".tsv")
-    DF <- DF[!duplicated(DF),]
-    write.table(DF,outFile,quote = F,sep = '\t',col.names = T,row.names = F)
-    write.xlsx(DF,gsub(".tsv",".xlsx",outFile), asTable = FALSE, overwrite = TRUE)
+    if (nrow(DF) == 0){
+      print("Empty DF")
+    }else{
+      outFile <- paste0(file.path(outdir,outname),".tsv")
+      DF <- DF[!duplicated(DF),]
+      write.table(DF,outFile,quote = F,sep = '\t',col.names = T,row.names = F)
+      write.xlsx(DF,gsub(".tsv",".xlsx",outFile), asTable = FALSE, overwrite = TRUE)
+    }
   } else{
-    outFile <- paste0(file.path(outdir,outname),".txt")
-    write(DF,outFile,sep = "\n")
+    if (length(DF) == 0){
+      print("Empty Vector")
+    }else{
+      outFile <- paste0(file.path(outdir,outname),".txt")
+      write(DF,outFile,sep = "\n")
+    }
   }
 }
 
@@ -99,9 +107,9 @@ toPO4outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/mappe
 DEGpvalCut <- 0.01
 DEGfcCut <- 1
 
-DEGsH202 <- wholeDF$ORFgene[wholeDF$DEGs.adj.pval.H202.YPD < DEGpvalCut & abs(wholeDF$DEGs.log2FC.H202.YPD) > DEGfcCut]
-DEGsDTT <- wholeDF$ORFgene[wholeDF$DEGs.adj.pval.DTT.YPD < DEGpvalCut  & abs(wholeDF$DEGs.log2FC.DTT.YPD) > DEGfcCut]
-DEGsSA <- wholeDF$ORFgene[wholeDF$DEGs.adj.pval.SA.YPD < DEGpvalCut & abs(wholeDF$DEGs.log2FC.SA.YPD) > DEGfcCut]
+DEGsH202 <- wholeDF$GeneName[wholeDF$DEGs.adj.pval.H202.YPD < DEGpvalCut & abs(wholeDF$DEGs.log2FC.H202.YPD) > DEGfcCut]
+DEGsDTT <- wholeDF$GeneName[wholeDF$DEGs.adj.pval.DTT.YPD < DEGpvalCut  & abs(wholeDF$DEGs.log2FC.DTT.YPD) > DEGfcCut]
+DEGsSA <- wholeDF$GeneName[wholeDF$DEGs.adj.pval.SA.YPD < DEGpvalCut & abs(wholeDF$DEGs.log2FC.SA.YPD) > DEGfcCut]
 DEGsH202 <- unique(na.omit(DEGsH202))
 DEGsDTT <- unique(na.omit(DEGsDTT))
 DEGsSA <- unique(na.omit(DEGsSA))
@@ -109,29 +117,16 @@ saveTablesTsvExc(DEGsH202,toPO4outdir)
 saveTablesTsvExc(DEGsDTT,toPO4outdir)
 saveTablesTsvExc(DEGsSA,toPO4outdir)
 
-
-DEGsH202po4 <- wholeDF[order(wholeDF$DEGs.log2FC.H202.YPD,decreasing = T),c("ORFgene","DEGs.log2FC.H202.YPD")]
-DEGsDTTpo4 <- wholeDF[order(wholeDF$DEGs.log2FC.DTT.YPD,decreasing = T),c("ORFgene","DEGs.log2FC.DTT.YPD")]
-DEGsSApo4 <- wholeDF[order(wholeDF$DEGs.log2FC.SA.YPD,decreasing = T),c("ORFgene","DEGs.log2FC.SA.YPD")]
+DEGsH202po4 <- wholeDF[order(wholeDF$DEGs.log2FC.H202.YPD,decreasing = T),c("GeneName","DEGs.log2FC.H202.YPD")]
+DEGsDTTpo4 <- wholeDF[order(wholeDF$DEGs.log2FC.DTT.YPD,decreasing = T),c("GeneName","DEGs.log2FC.DTT.YPD")]
+DEGsSApo4 <- wholeDF[order(wholeDF$DEGs.log2FC.SA.YPD,decreasing = T),c("GeneName","DEGs.log2FC.SA.YPD")]
 DEGsH202po4 <- DEGsH202po4[complete.cases(DEGsH202po4),]
 DEGsDTTpo4 <- DEGsDTTpo4[complete.cases(DEGsDTTpo4),]
 DEGsSApo4 <- DEGsSApo4[complete.cases(DEGsSApo4),]
-#merge(DEGsH202po4,DEGsDTTpo4,DEGsSApo4)
 
 saveTablesTsvExc(DEGsDTTpo4,toPO4outdir)
 saveTablesTsvExc(DEGsDTTpo4,toPO4outdir)
 saveTablesTsvExc(DEGsSApo4,toPO4outdir)
-
-DEGsH202po4names <- wholeDF[order(wholeDF$DEGs.log2FC.H202.YPD,decreasing = T),c("GeneName","DEGs.log2FC.H202.YPD")]
-DEGsDTTpo4names <- wholeDF[order(wholeDF$DEGs.log2FC.DTT.YPD,decreasing = T),c("GeneName","DEGs.log2FC.DTT.YPD")]
-DEGsSApo4names <- wholeDF[order(wholeDF$DEGs.log2FC.SA.YPD,decreasing = T),c("GeneName","DEGs.log2FC.SA.YPD")]
-DEGsH202po4names <- DEGsH202po4names[complete.cases(DEGsH202po4names),]
-DEGsDTTpo4names <- DEGsDTTpo4names[complete.cases(DEGsDTTpo4names),]
-DEGsSApo4names <- DEGsSApo4names[complete.cases(DEGsSApo4names),]
-saveTablesTsvExc(DEGsH202po4names,toPO4outdir)
-saveTablesTsvExc(DEGsDTTpo4names,toPO4outdir)
-saveTablesTsvExc(DEGsSApo4names,toPO4outdir)
-
 
 # 2- Proteins and mRNABProteins
 protsPvalCut <- 0.05
@@ -148,6 +143,7 @@ mRNABPomeFAXfcSA <- wholeDF[,c("UniprotACC","mRNABPomeFAX.log2ratio_PolyARNAFAXw
 netChangesFAXDTT <- wholeDF[,c("UniprotACC","netChangesFAXDTT")]
 netChangesFAXH2O2 <- wholeDF[,c("UniprotACC","netChangesFAXH2O2")]
 netChangesFAXSA <- wholeDF[,c("UniprotACC","netChangesFAXSA")]
+
 proteomeFAXfcDTT <- proteomeFAXfcDTT[complete.cases(proteomeFAXfcDTT),]
 proteomeFAXfcH2O2 <- proteomeFAXfcH2O2[complete.cases(proteomeFAXfcH2O2),]
 proteomeFAXfcSA <- proteomeFAXfcSA[complete.cases(proteomeFAXfcSA),]
@@ -157,6 +153,7 @@ mRNABPomeFAXfcSA <- mRNABPomeFAXfcSA[complete.cases(mRNABPomeFAXfcSA),]
 netChangesFAXDTT <- netChangesFAXDTT[complete.cases(netChangesFAXDTT),]
 netChangesFAXH2O2 <- netChangesUVH2O2[complete.cases(netChangesFAXH2O2),]
 netChangesFAXSA <- netChangesUVSA[complete.cases(netChangesFAXSA),]
+
 proteomeFAXfcDTT <- proteomeFAXfcDTT[order(proteomeFAXfcDTT[,2],decreasing = T),]
 proteomeFAXfcH2O2 <- proteomeFAXfcH2O2[order(proteomeFAXfcH2O2[,2],decreasing = T),]
 proteomeFAXfcSA <- proteomeFAXfcSA[order(proteomeFAXfcSA[,2],decreasing = T),]
@@ -177,7 +174,7 @@ saveTablesTsvExc(netChangesFAXDTT,toPO4outdir)
 saveTablesTsvExc(netChangesFAXH2O2,toPO4outdir)
 saveTablesTsvExc(netChangesFAXSA,toPO4outdir)
 
-## 2.1- FAX DTT Selection
+## 2.1.1 - FAX DTT Selection
 bypValueProteomeFAXDTT <- wholeDF$proteomeFAX.pValue_Condition2 < protsPvalCut
 byqValueProteomeFAXDTT <- wholeDF$proteomeFAX.qValue_Condition2 < protsPvalCut
 byFCproteomeFAXDTT <- abs(wholeDF$proteomeFAX.log2ratio_Condition2) > protsFcCut
@@ -186,31 +183,76 @@ byqValuemRNABPomeFAXDTT <- wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithDTT < prot
 byFCmRNABPomeFAXDTT <- abs(wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithDTT) > protsFcCut
 byNetChangesFAXDTT <- abs(wholeDF$netChangesFAXDTT) > protsFcCut
 
-pValFCproteomeFAXselected <- na.omit(unique(wholeDF$UniprotACC[bypValueProteomeFAX & byFCproteomeFAX])); length(pValFCproteomeFAXselected)
-qValFCproteomeFAXselected <- na.omit(unique(wholeDF$UniprotACC[byqValueProteomeFAX & byFCproteomeFAX])); length(qValFCproteomeFAXselected)
-pValFCmRNABPomeFAXselected <- na.omit(unique(wholeDF$UniprotACC[bypValuemRNABPomeFAX & byFCmRNABPomeFAX])); length(pValFCmRNABPomeFAXselected)
-qValFCmRNABPomeFAXselected <- na.omit(unique(wholeDF$UniprotACC[byqValuemRNABPomeFAX & byFCmRNABPomeFAX])); length(qValFCmRNABPomeFAXselected)
+pValFCproteomeFAXDTTselected <- na.omit(unique(wholeDF$UniprotACC[bypValueProteomeFAXDTT & byFCproteomeFAXDTT])); length(pValFCproteomeFAXDTTselected)
+qValFCproteomeFAXDTTselected <- na.omit(unique(wholeDF$UniprotACC[byqValueProteomeFAXDTT & byFCproteomeFAXDTT])); length(qValFCproteomeFAXDTTselected)
+pValFCmRNABPomeFAXDTTselected <- na.omit(unique(wholeDF$UniprotACC[bypValuemRNABPomeFAXDTT & byFCmRNABPomeFAXDTT])); length(pValFCmRNABPomeFAXDTTselected)
+qValFCmRNABPomeFAXDTTselected <- na.omit(unique(wholeDF$UniprotACC[byqValuemRNABPomeFAXDTT & byFCmRNABPomeFAXDTT])); length(qValFCmRNABPomeFAXDTTselected)
+saveTablesTsvExc(pValFCproteomeFAXDTTselected,toPO4outdir)
+saveTablesTsvExc(qValFCproteomeFAXDTTselected,toPO4outdir)
+saveTablesTsvExc(pValFCmRNABPomeFAXDTTselected,toPO4outdir)
+saveTablesTsvExc(qValFCmRNABPomeFAXDTTselected,toPO4outdir)
 
-netChangesFAXDTTselected <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXDTT & bypValueProteomeFAX & bypValuemRNABPomeFAX])) # 0
-netChangesFAXDTTselected <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXDTT & byqValueProteomeFAX & byqValuemRNABPomeFAX])) # 0
-netChangesFAXDTTselected <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXDTT]))
+netChangesFAXDTTprotNrbpomeSelPval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXDTT & bypValueProteomeFAXDTT & bypValuemRNABPomeFAXDTT])) # 0
+netChangesFAXDTTprotNrbpomeSelQval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXDTT & byqValueProteomeFAXDTT & byqValuemRNABPomeFAXDTT])) # 0
+netChangesFAXDTTSelFC <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXDTT]))
 
+saveTablesTsvExc(netChangesFAXDTTprotNrbpomeSelPval,toPO4outdir)
+saveTablesTsvExc(netChangesFAXDTTprotNrbpomeSelQval,toPO4outdir)
+saveTablesTsvExc(netChangesFAXDTTSelFC,toPO4outdir)
 
-wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithH2O2 < protsPvalCut
-wholeDF$proteomeFAX.qValue_Condition3 < protsPvalCut
-wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithH2O2 > protsFcCut
-wholeDF$proteomeFAX.log2ratio_Condition3 > protsFcCut
-wholeDF$netChangesFAXH2O2 > protsFcCut
+## 2.1.2 - FAX H2O2 Selection
+bypValueProteomeFAXH2O2 <- wholeDF$proteomeFAX.pValue_Condition2 < protsPvalCut
+byqValueProteomeFAXH2O2 <- wholeDF$proteomeFAX.qValue_Condition2 < protsPvalCut
+byFCproteomeFAXH2O2 <- abs(wholeDF$proteomeFAX.log2ratio_Condition2) > protsFcCut
+bypValuemRNABPomeFAXH2O2 <- wholeDF$mRNABPomeFAX.pValue_PolyARNAFAXwithH2O2 < protsPvalCut
+byqValuemRNABPomeFAXH2O2 <- wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithH2O2 < protsPvalCut
+byFCmRNABPomeFAXH2O2 <- abs(wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithH2O2) > protsFcCut
+byNetChangesFAXH2O2 <- abs(wholeDF$netChangesFAXH2O2) > protsFcCut
 
-wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithSA < protsPvalCut
-wholeDF$proteomeFAX.qValue_Condition4 < protsPvalCut
-wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithSA > protsFcCut
-wholeDF$proteomeFAX.log2ratio_Condition4 > protsFcCut
-wholeDF$netChangesFAXSA > protsFcCut
+pValFCproteomeFAXH2O2selected <- na.omit(unique(wholeDF$UniprotACC[bypValueProteomeFAXH2O2 & byFCproteomeFAXH2O2])); length(pValFCproteomeFAXH2O2selected)
+qValFCproteomeFAXH2O2selected <- na.omit(unique(wholeDF$UniprotACC[byqValueProteomeFAXH2O2 & byFCproteomeFAXH2O2])); length(qValFCproteomeFAXH2O2selected)
+pValFCmRNABPomeFAXH2O2selected <- na.omit(unique(wholeDF$UniprotACC[bypValuemRNABPomeFAXH2O2 & byFCmRNABPomeFAXH2O2])); length(pValFCmRNABPomeFAXH2O2selected)
+qValFCmRNABPomeFAXH2O2selected <- na.omit(unique(wholeDF$UniprotACC[byqValuemRNABPomeFAXH2O2 & byFCmRNABPomeFAXH2O2])); length(qValFCmRNABPomeFAXH2O2selected)
+saveTablesTsvExc(pValFCproteomeFAXH2O2selected,toPO4outdir)
+saveTablesTsvExc(qValFCproteomeFAXH2O2selected,toPO4outdir)
+saveTablesTsvExc(pValFCmRNABPomeFAXH2O2selected,toPO4outdir)
+saveTablesTsvExc(qValFCmRNABPomeFAXH2O2selected,toPO4outdir)
 
-saveTablesTsvExc(FAXprotNrbpome,toPO4outdir)
+netChangesFAXH2O2protNrbpomeSelPval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXH2O2 & bypValueProteomeFAXH2O2 & bypValuemRNABPomeFAXH2O2])) # 0
+netChangesFAXH2O2protNrbpomeSelQval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXH2O2 & byqValueProteomeFAXH2O2 & byqValuemRNABPomeFAXH2O2])) # 0
+netChangesFAXH2O2SelFC <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXH2O2]))
 
-# 2.2- UV
+saveTablesTsvExc(netChangesFAXH2O2protNrbpomeSelPval,toPO4outdir)
+saveTablesTsvExc(netChangesFAXH2O2protNrbpomeSelQval,toPO4outdir)
+saveTablesTsvExc(netChangesFAXH2O2SelFC,toPO4outdir)
+
+## 2.1.3 - FAX SA Selection
+bypValueProteomeFAXSA <- wholeDF$proteomeFAX.pValue_Condition2 < protsPvalCut
+byqValueProteomeFAXSA <- wholeDF$proteomeFAX.qValue_Condition2 < protsPvalCut
+byFCproteomeFAXSA <- abs(wholeDF$proteomeFAX.log2ratio_Condition2) > protsFcCut
+bypValuemRNABPomeFAXSA <- wholeDF$mRNABPomeFAX.pValue_PolyARNAFAXwithSA < protsPvalCut
+byqValuemRNABPomeFAXSA <- wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithSA < protsPvalCut
+byFCmRNABPomeFAXSA <- abs(wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithSA) > protsFcCut
+byNetChangesFAXSA <- abs(wholeDF$netChangesFAXSA) > protsFcCut
+
+pValFCproteomeFAXSAselected <- na.omit(unique(wholeDF$UniprotACC[bypValueProteomeFAXSA & byFCproteomeFAXSA])); length(pValFCproteomeFAXSAselected)
+qValFCproteomeFAXSAselected <- na.omit(unique(wholeDF$UniprotACC[byqValueProteomeFAXSA & byFCproteomeFAXSA])); length(qValFCproteomeFAXSAselected)
+pValFCmRNABPomeFAXSAselected <- na.omit(unique(wholeDF$UniprotACC[bypValuemRNABPomeFAXSA & byFCmRNABPomeFAXSA])); length(pValFCmRNABPomeFAXSAselected)
+qValFCmRNABPomeFAXSAselected <- na.omit(unique(wholeDF$UniprotACC[byqValuemRNABPomeFAXSA & byFCmRNABPomeFAXSA])); length(qValFCmRNABPomeFAXSAselected)
+saveTablesTsvExc(pValFCproteomeFAXSAselected,toPO4outdir)
+saveTablesTsvExc(qValFCproteomeFAXSAselected,toPO4outdir)
+saveTablesTsvExc(pValFCmRNABPomeFAXSAselected,toPO4outdir)
+saveTablesTsvExc(qValFCmRNABPomeFAXSAselected,toPO4outdir)
+
+netChangesFAXSAprotNrbpomeSelPval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXSA & bypValueProteomeFAXSA & bypValuemRNABPomeFAXSA])) # 0
+netChangesFAXSAprotNrbpomeSelQval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXSA & byqValueProteomeFAXSA & byqValuemRNABPomeFAXSA])) # 0
+netChangesFAXSASelFC <- na.omit(unique(wholeDF$UniprotACC[byNetChangesFAXSA]))
+
+saveTablesTsvExc(netChangesFAXSAprotNrbpomeSelPval,toPO4outdir)
+saveTablesTsvExc(netChangesFAXSAprotNrbpomeSelQval,toPO4outdir)
+saveTablesTsvExc(netChangesFAXSASelFC,toPO4outdir)
+
+# 2.2 - UV
 proteomeUVfcDTT <- wholeDF[,c("UniprotACC","proteomeUV.log2ratio_Condition2")]
 proteomeUVfcH2O2 <- wholeDF[,c("UniprotACC","proteomeUV.log2ratio_Condition3")]
 proteomeUVfcSA <- wholeDF[,c("UniprotACC","proteomeUV.log2ratio_Condition4")]
@@ -220,6 +262,7 @@ mRNABPomeUVfcSA <- wholeDF[,c("UniprotACC","mRNABPomeUV.log2ratio_PolyARNAUVwith
 netChangesUVDTT <- wholeDF[,c("UniprotACC","netChangesUVDTT")]
 netChangesUVH2O2 <- wholeDF[,c("UniprotACC","netChangesUVH2O2")]
 netChangesUVSA <- wholeDF[,c("UniprotACC","netChangesUVSA")]
+
 proteomeUVfcDTT <- proteomeUVfcDTT[complete.cases(proteomeUVfcDTT),]
 proteomeUVfcH2O2 <- proteomeUVfcH2O2[complete.cases(proteomeUVfcH2O2),]
 proteomeUVfcSA <- proteomeUVfcSA[complete.cases(proteomeUVfcSA),]
@@ -229,6 +272,7 @@ mRNABPomeUVfcSA <- mRNABPomeUVfcSA[complete.cases(mRNABPomeUVfcSA),]
 netChangesUVDTT <- netChangesUVDTT[complete.cases(netChangesUVDTT),]
 netChangesUVH2O2 <- netChangesUVH2O2[complete.cases(netChangesUVH2O2),]
 netChangesUVSA <- netChangesUVSA[complete.cases(netChangesUVSA),]
+
 proteomeUVfcDTT <- proteomeUVfcDTT[order(proteomeUVfcDTT[,2],decreasing = T),]
 proteomeUVfcH2O2 <- proteomeUVfcH2O2[order(proteomeUVfcH2O2[,2],decreasing = T),]
 proteomeUVfcSA <- proteomeUVfcSA[order(proteomeUVfcSA[,2],decreasing = T),]
@@ -249,28 +293,83 @@ saveTablesTsvExc(netChangesUVDTT,toPO4outdir)
 saveTablesTsvExc(netChangesUVH2O2,toPO4outdir)
 saveTablesTsvExc(netChangesUVSA,toPO4outdir)
 
-## 2.2- FAX DTT Selection
+## 2.1- UV DTT Selection
+bypValueProteomeUVDTT <- wholeDF$proteomeUV.pValue_Condition2 < protsPvalCut
+byqValueProteomeUVDTT <- wholeDF$proteomeUV.qValue_Condition2 < protsPvalCut
+byFCproteomeUVDTT <- abs(wholeDF$proteomeUV.log2ratio_Condition2) > protsFcCut
+bypValuemRNABPomeUVDTT <- wholeDF$mRNABPomeUV.pValue_PolyARNAUVwithDTT < protsPvalCut
+byqValuemRNABPomeUVDTT <- wholeDF$mRNABPomeUV.qValue_PolyARNAUVwithDTT < protsPvalCut
+byFCmRNABPomeUVDTT <- abs(wholeDF$mRNABPomeUV.log2ratio_PolyARNAUVwithDTT) > protsFcCut
+byNetChangesUVDTT <- abs(wholeDF$netChangesUVDTT) > protsFcCut
 
-wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithDTT < protsPvalCut
-wholeDF$proteomeFAX.qValue_Condition2 < protsPvalCut
-wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithDTT > protsFcCut
-wholeDF$proteomeFAX.log2ratio_Condition2 > protsFcCut
-wholeDF$netChangesFAXDTT > protsFcCut
+pValFCproteomeUVDTTselected <- na.omit(unique(wholeDF$UniprotACC[bypValueProteomeUVDTT & byFCproteomeUVDTT])); length(pValFCproteomeUVDTTselected)
+qValFCproteomeUVDTTselected <- na.omit(unique(wholeDF$UniprotACC[byqValueProteomeUVDTT & byFCproteomeUVDTT])); length(qValFCproteomeUVDTTselected)
+pValFCmRNABPomeUVDTTselected <- na.omit(unique(wholeDF$UniprotACC[bypValuemRNABPomeUVDTT & byFCmRNABPomeUVDTT])); length(pValFCmRNABPomeUVDTTselected)
+qValFCmRNABPomeUVDTTselected <- na.omit(unique(wholeDF$UniprotACC[byqValuemRNABPomeUVDTT & byFCmRNABPomeUVDTT])); length(qValFCmRNABPomeUVDTTselected)
+saveTablesTsvExc(pValFCproteomeUVDTTselected,toPO4outdir)
+saveTablesTsvExc(qValFCproteomeUVDTTselected,toPO4outdir)
+saveTablesTsvExc(pValFCmRNABPomeUVDTTselected,toPO4outdir)
+saveTablesTsvExc(qValFCmRNABPomeUVDTTselected,toPO4outdir)
 
-wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithH2O2 < protsPvalCut
-wholeDF$proteomeFAX.qValue_Condition3 < protsPvalCut
-wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithH2O2 > protsFcCut
-wholeDF$proteomeFAX.log2ratio_Condition3 > protsFcCut
-wholeDF$netChangesFAXH2O2 > protsFcCut
+netChangesUVDTTprotNrbpomeSelPval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVDTT & bypValueProteomeUVDTT & bypValuemRNABPomeUVDTT])) # 0
+netChangesUVDTTprotNrbpomeSelQval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVDTT & byqValueProteomeUVDTT & byqValuemRNABPomeUVDTT])) # 0
+netChangesUVDTTSelFC <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVDTT]))
 
-wholeDF$mRNABPomeFAX.qValue_PolyARNAFAXwithSA < protsPvalCut
-wholeDF$proteomeFAX.qValue_Condition4 < protsPvalCut
-wholeDF$mRNABPomeFAX.log2ratio_PolyARNAFAXwithSA > protsFcCut
-wholeDF$proteomeFAX.log2ratio_Condition4 > protsFcCut
-wholeDF$netChangesFAXSA > protsFcCut
+saveTablesTsvExc(netChangesUVDTTprotNrbpomeSelPval,toPO4outdir)
+saveTablesTsvExc(netChangesUVDTTprotNrbpomeSelQval,toPO4outdir)
+saveTablesTsvExc(netChangesUVDTTSelFC,toPO4outdir)
 
+## 2.2- UV H2O2 Selection
+bypValueProteomeUVH2O2 <- wholeDF$proteomeUV.pValue_Condition2 < protsPvalCut
+byqValueProteomeUVH2O2 <- wholeDF$proteomeUV.qValue_Condition2 < protsPvalCut
+byFCproteomeUVH2O2 <- abs(wholeDF$proteomeUV.log2ratio_Condition2) > protsFcCut
+bypValuemRNABPomeUVH2O2 <- wholeDF$mRNABPomeUV.pValue_PolyARNAUVwithH2O2 < protsPvalCut
+byqValuemRNABPomeUVH2O2 <- wholeDF$mRNABPomeUV.qValue_PolyARNAUVwithH2O2 < protsPvalCut
+byFCmRNABPomeUVH2O2 <- abs(wholeDF$mRNABPomeUV.log2ratio_PolyARNAUVwithH202) > protsFcCut
+byNetChangesUVH2O2 <- abs(wholeDF$netChangesUVH2O2) > protsFcCut
 
-saveTablesTsvExc(UVprotNrbpome,toPO4outdir)
+pValFCproteomeUVH2O2selected <- na.omit(unique(wholeDF$UniprotACC[bypValueProteomeUVH2O2 & byFCproteomeUVH2O2])); length(pValFCproteomeUVH2O2selected)
+qValFCproteomeUVH2O2selected <- na.omit(unique(wholeDF$UniprotACC[byqValueProteomeUVH2O2 & byFCproteomeUVH2O2])); length(qValFCproteomeUVH2O2selected)
+pValFCmRNABPomeUVH2O2selected <- na.omit(unique(wholeDF$UniprotACC[bypValuemRNABPomeUVH2O2 & byFCmRNABPomeUVH2O2])); length(pValFCmRNABPomeUVH2O2selected)
+qValFCmRNABPomeUVH2O2selected <- na.omit(unique(wholeDF$UniprotACC[byqValuemRNABPomeUVH2O2 & byFCmRNABPomeUVH2O2])); length(qValFCmRNABPomeUVH2O2selected)
+saveTablesTsvExc(pValFCproteomeUVH2O2selected,toPO4outdir)
+saveTablesTsvExc(qValFCproteomeUVH2O2selected,toPO4outdir)
+saveTablesTsvExc(pValFCmRNABPomeUVH2O2selected,toPO4outdir)
+saveTablesTsvExc(qValFCmRNABPomeUVH2O2selected,toPO4outdir)
+
+netChangesUVH2O2protNrbpomeSelPval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVH2O2 & bypValueProteomeUVH2O2 & bypValuemRNABPomeUVH2O2])) # 0
+netChangesUVH2O2protNrbpomeSelQval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVH2O2 & byqValueProteomeUVH2O2 & byqValuemRNABPomeUVH2O2])) # 0
+netChangesUVH2O2SelFC <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVH2O2]))
+
+saveTablesTsvExc(netChangesUVH2O2protNrbpomeSelPval,toPO4outdir)
+saveTablesTsvExc(netChangesUVH2O2protNrbpomeSelQval,toPO4outdir)
+saveTablesTsvExc(netChangesUVH2O2SelFC,toPO4outdir)
+
+## 2.3- UV SA Selection
+bypValueProteomeUVSA <- wholeDF$proteomeUV.pValue_Condition2 < protsPvalCut
+byqValueProteomeUVSA <- wholeDF$proteomeUV.qValue_Condition2 < protsPvalCut
+byFCproteomeUVSA <- abs(wholeDF$proteomeUV.log2ratio_Condition2) > protsFcCut
+bypValuemRNABPomeUVSA <- wholeDF$mRNABPomeUV.pValue_PolyARNAUVwithSA < protsPvalCut
+byqValuemRNABPomeUVSA <- wholeDF$mRNABPomeUV.qValue_PolyARNAUVwithSA < protsPvalCut
+byFCmRNABPomeUVSA <- abs(wholeDF$mRNABPomeUV.log2ratio_PolyARNAUVwithSA) > protsFcCut
+byNetChangesUVSA <- abs(wholeDF$netChangesUVSA) > protsFcCut
+
+pValFCproteomeUVSAselected <- na.omit(unique(wholeDF$UniprotACC[bypValueProteomeUVSA & byFCproteomeUVSA])); length(pValFCproteomeUVSAselected)
+qValFCproteomeUVSAselected <- na.omit(unique(wholeDF$UniprotACC[byqValueProteomeUVSA & byFCproteomeUVSA])); length(qValFCproteomeUVSAselected)
+pValFCmRNABPomeUVSAselected <- na.omit(unique(wholeDF$UniprotACC[bypValuemRNABPomeUVSA & byFCmRNABPomeUVSA])); length(pValFCmRNABPomeUVSAselected)
+qValFCmRNABPomeUVSAselected <- na.omit(unique(wholeDF$UniprotACC[byqValuemRNABPomeUVSA & byFCmRNABPomeUVSA])); length(qValFCmRNABPomeUVSAselected)
+saveTablesTsvExc(pValFCproteomeUVSAselected,toPO4outdir)
+saveTablesTsvExc(qValFCproteomeUVSAselected,toPO4outdir)
+saveTablesTsvExc(pValFCmRNABPomeUVSAselected,toPO4outdir)
+saveTablesTsvExc(qValFCmRNABPomeUVSAselected,toPO4outdir)
+
+netChangesUVSAprotNrbpomeSelPval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVSA & bypValueProteomeUVSA & bypValuemRNABPomeUVSA])) # 0
+netChangesUVSAprotNrbpomeSelQval <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVSA & byqValueProteomeUVSA & byqValuemRNABPomeUVSA])) # 0
+netChangesUVSASelFC <- na.omit(unique(wholeDF$UniprotACC[byNetChangesUVSA]))
+
+saveTablesTsvExc(netChangesUVSAprotNrbpomeSelPval,toPO4outdir)
+saveTablesTsvExc(netChangesUVSAprotNrbpomeSelQval,toPO4outdir)
+saveTablesTsvExc(netChangesUVSASelFC,toPO4outdir)
 
 ###########################
 ##### OUR DATA MAPPED #####
