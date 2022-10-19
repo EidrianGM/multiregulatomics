@@ -37,3 +37,14 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+yeastReference/
+toIbtissam/
+template/
+geneLists/
+enrichmentRes/
+data/
+clustering/
+adrian/
+network/
+scripts/SafeQuant-2.3.4/
