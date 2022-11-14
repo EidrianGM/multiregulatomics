@@ -25,9 +25,9 @@ datatype <- "mRBPome"
 crosslink <- "UVX"
 
 mrbpomeUVXphenoD <- basePhenoData[basePhenoData$Treatment %in% c(control,mytreatment) & 
-                                  basePhenoData$normalised == normalised & 
-                                  basePhenoData$Data == datatype & 
-                                  basePhenoData$Crosslinking == crosslink,]
+                                    basePhenoData$normalised == normalised & 
+                                    basePhenoData$Data == datatype & 
+                                    basePhenoData$Crosslinking == crosslink,]
 
 subfolderpath <- unique(paste(projectBaseDir,mrbpomeUVXphenoD$folderdate,mrbpomeUVXphenoD$Folder.name,mrbpomeUVXphenoD$Subfolder.name,sep = "/"))
 dataFile <- list.files(subfolderpath,pattern = "*PROTEIN.tsv",full.names = T)
@@ -40,9 +40,9 @@ basicAnalysis(dataFile,ourPhenoData,outdir,mytreatment,mappingDF)
 crosslink <- "FAX"
 
 ourPhenoData <- basePhenoData[basePhenoData$Treatment %in% c(control,mytreatment) & 
-                              basePhenoData$normalised == normalised & 
-                              basePhenoData$Data == datatype & 
-                              basePhenoData$Crosslinking == crosslink,]
+                                basePhenoData$normalised == normalised & 
+                                basePhenoData$Data == datatype & 
+                                basePhenoData$Crosslinking == crosslink,]
 
 subfolderpath <- unique(paste(projectBaseDir,ourPhenoData$folderdate,ourPhenoData$Folder.name,ourPhenoData$Subfolder.name,sep = "/"))
 dataFile <- list.files(subfolderpath,pattern = "*PROTEIN.tsv",full.names = T)
@@ -60,9 +60,9 @@ datatype <- "Proteome"
 crosslink <- "FAX"
 
 ourPhenoData <- basePhenoData[basePhenoData$Treatment %in% c(control,mytreatment) & 
-                               basePhenoData$normalised == normalised & 
-                               basePhenoData$Data == datatype & 
-                               basePhenoData$Crosslinking == crosslink,]
+                                basePhenoData$normalised == normalised & 
+                                basePhenoData$Data == datatype & 
+                                basePhenoData$Crosslinking == crosslink,]
 
 subfolderpath <- unique(paste(projectBaseDir,ourPhenoData$folderdate,ourPhenoData$Folder.name,ourPhenoData$Subfolder.name,sep = "/"))
 dataFile <- list.files(subfolderpath,pattern = "*PROTEIN.tsv",full.names = T)
@@ -75,9 +75,9 @@ basicAnalysis(dataFile,ourPhenoData,outdir,mytreatment,mappingDF)
 crosslink <- "UVX"
 
 ourPhenoData <- basePhenoData[basePhenoData$Treatment %in% c(control,mytreatment) & 
-                                  basePhenoData$normalised == normalised & 
-                                  basePhenoData$Data == datatype & 
-                                  basePhenoData$Crosslinking == crosslink,]
+                                basePhenoData$normalised == normalised & 
+                                basePhenoData$Data == datatype & 
+                                basePhenoData$Crosslinking == crosslink,]
 
 subfolderpath <- unique(paste(projectBaseDir,ourPhenoData$folderdate,ourPhenoData$Folder.name,ourPhenoData$Subfolder.name,sep = "/"))
 dataFile <- list.files(subfolderpath,pattern = "*PROTEIN.tsv",full.names = T)
@@ -89,16 +89,69 @@ basicAnalysis(dataFile,ourPhenoData,outdir,mytreatment,mappingDF)
 ########################   BACKGROUND   ########################################
 ################################################################################
 
-normalised <- "No"; datatype <- "mRBPome"; control <- "no"
+mappingFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/yeastReference/mappingFile_8.9.22.xlsx"
+mappingDF <- read.xlsx(mappingFile)
 
-selectedPhenoD <- basePhenoData[basePhenoData$Treatment %in% c(control) & 
-                                basePhenoData$normalised == normalised & 
-                                basePhenoData$Data == datatype,]
+normalised <- "No"; datatype <- "mRBPome"; control <- "no"; mytreatment <- "SA"; crosslink <- "NOX";
 
+selectedPhenoD <- basePhenoData[basePhenoData$Treatment %in% c(control,mytreatment) & 
+                                  basePhenoData$normalised == normalised & 
+                                  basePhenoData$Data == datatype & 
+                                  basePhenoData$Crosslinking == crosslink &
+                                  basePhenoData$folderdate == "old",]
 subfolderpath <- unique(paste(projectBaseDir,selectedPhenoD$folderdate,selectedPhenoD$Folder.name,selectedPhenoD$Subfolder.name,sep = "/"))
 subfolderpath <- subfolderpath[c(1,2,5)]
-
 dataFile <- list.files(subfolderpath,pattern = "*PROTEIN.tsv",full.names = T)
+NOXmRBPDF <- read.delim(dataFile)
+
+FAXmRBPfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/old/P445_AG_PolyA_40_all_3_cond_20220611_Final/P445_AG_PolyA_40_20220617_gmin_FAX_p2_Final/P445_AG_PolyA_40_20220617_gmin_FAX_p2_PROTEIN.tsv"
+FAXmRBPDF <- read.delim(FAXmRBPfile)
+length(unique(FAXmRBPDF$ac))
+UVXmRBPfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/old/P445_AG_PolyA_40_all_3_cond_20220611_Final/P445_AG_PolyA_40_20220617_gmin_UV_p2_no511_Final/P445_AG_PolyA_40_20220617_gmin_UV_p2_no511_PROTEIN.tsv"
+UVXmRBPDF <- read.delim(UVXmRBPfile)
+length(unique(UVXmRBPDF$ac))
+
+all(FAXmRBPDF$proteinName %in% NOXmRBPDF$proteinName)
+all(UVXmRBPDF$proteinName %in% NOXmRBPDF$proteinName)
+
+FAXbackgDF <- NOXmRBPDF[NOXmRBPDF$proteinName %in% FAXmRBPDF$proteinName,]
+UVXbackgDF <- NOXmRBPDF[NOXmRBPDF$proteinName %in% UVXmRBPDF$proteinName,]
+
+outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/background"
+saveTablesTsvExc(FAXbackgDF,outdir,completeNdedup=F,excel=F,bycompleteFC=F,rownames = F)
+saveTablesTsvExc(UVXbackgDF,outdir,completeNdedup=F,excel=F,bycompleteFC=F,rownames = F)
+
+FAXbackgPhenoD <- selectedPhenoD[selectedPhenoD$Condition %in% c("1","2"),]
+UVXbackgPhenoD <- selectedPhenoD[selectedPhenoD$Condition %in% c("1","3"),]
+saveTablesTsvExc(FAXbackgPhenoD,outdir,completeNdedup=F,excel=F,bycompleteFC=F,rownames = F)
+saveTablesTsvExc(UVXbackgPhenoD,outdir,completeNdedup=F,excel=F,bycompleteFC=F,rownames = F)
+
+
+ncol(FAXbackgDF)
+
+conditionCol <- "Condition"
+pCutoff <- 0.05
+FCcutoff <- 3
+control <- "1"
+mytreatment <- "2"
+
+outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/adrian/background/FAX"
+tagname <- "mRBPome_NOX_FAX"
+basicAnalysis(FAXbackgDF,FAXbackgPhenoD,outdir,tagname,"2",mappingDF,"1",conditionCol,pCutoff,FCcutoff)
+
+outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/adrian/background/UVX"
+tagname <- "mRBPome_NOX_UVX"
+basicAnalysis(UVXbackgDF,UVXbackgPhenoD,outdir,tagname,"3",mappingDF,"1",conditionCol,pCutoff,FCcutoff)
+
+
+
+
+################################################################################
+################################################################################ 
+
+selectedPhenoD <- selectedPhenoD[]
+
+
 myDFfax <- read.delim(dataFile[grep("FAX_p2",dataFile)])
 myDFuvx <- read.delim(dataFile[grep("UV_p2",dataFile)])
 myDFnox <- read.delim(dataFile[grep("p2_NOX",dataFile)])
@@ -132,6 +185,8 @@ basicAnalysis(myDF,ourPhenoData,outdir,mytreatment,subMapDF)
 ourPhenoData <- selectedPhenoD[!selectedPhenoD$Run.number %in% c(25,36),]
 outdir <- paste0("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/adrian/",datatype,crosslink,mytreatment,"no25-36")
 basicAnalysis(myDF,ourPhenoData,outdir,mytreatment,subMapDF)
+
+
 
 ################################################################################
 ########################   POSTANALYSIS   ######################################  
@@ -198,6 +253,22 @@ names(ratios) <- caseConditions
 resultsDF <- merge(pvalues,ratios,by="row.names")
 
 View(resultsDF)
+
+
+ENO1control <- c(10,50,30)
+ENO1n2control <- c(100,70,84)
+ENO1case <- c(6,12,9)
+
+log2(mean(ENO1control)) - log2(mean(ENO1case))
+log2(mean(ENO1control+ENO1n2control)) - log2(mean(ENO1case+ENO1n2control))
+
+
+- 
+  
+  
+  ENO1sa <- c(10,50,30)
+ENO1n2sa <- c(100,70,84)
+ENO2sa <- c(6,12,9)
 
 
 
@@ -338,3 +409,65 @@ length(unique(newFAXSAFull$UniprotACC[newFAXSAFull$newRBP.FAX.SA.FDR.SA <= 0.05]
 sum(na.omit(newFAXSAFull$newRBP.FAX.SA.FDR.SA <= 0.05))
 sum(na.omit(newFAXSAFull$newPROT.FAX.SA.FDR.SA <= 0.05))
 
+##########
+########## TO ESCHER
+##########
+
+outdir <- "/home/eidriangm/Desktop/toDo/surrey/multilayerpathwaysviz/data/pathway/toEscher"
+
+read.xlsx("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/adrian/newUVXSAFull.xlsx")
+myData <- fromJSON(file="/home/eidriangm/Desktop/toDo/surrey/multilayerpathwaysviz/data/pathway/genes_iMM904.json")
+ORFgenesinMM904 <- lapply(myData$results, FUN = function(x) return(x$bigg_id))
+ORFgenesinMM904 <- unlist(ORFgenesinMM904)
+
+NamegenesinMM904 <- lapply(myData$results, FUN = function(x) return(x$name))
+NamegenesinMM904 <- unlist(NamegenesinMM904)
+
+
+newFAXSAFull <- read.xlsx("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/adrian/newFAXSAFull.xlsx")
+mydataORF <- newFAXSAFull[,grep("ORF|log2|netchanges",colnames(newFAXSAFull))]
+
+mydataORF$ORFgene <- NULL
+mydataORF$Gene.Names..ORF. <- NULL
+newFAXSAFull$ORF <- gsub("-","_",newFAXSAFull$ORF)
+mydataORF <- mydataORF[!duplicated(mydataORF),]
+mapORFsNotInOurData <- ORFgenesinMM904[!ORFgenesinMM904 %in% newFAXSAFull$ORF]
+mydataORF <- mydataORF[mydataORF$ORF %in% ORFgenesinMM904,]
+any(duplicated(mydataORF$ORFgene))
+colnames(mydataORF) <- c("","Transcriptome","Proteome","mRNABPome","NetChangs")
+
+outFile <- file.path(outdir,"Tr.ORFsEscherFAXSAFull.csv")
+write.table(mydataORF[,c(1,2)],outFile,sep = ",",na = "0",row.names = F,quote = FALSE)
+
+outFile <- file.path(outdir,"Prot.ORFsEscherFAXSAFull.csv")
+write.table(mydataORF[,c(1,3)],outFile,sep = ",",na = "0",row.names = F,quote = FALSE)
+
+outFile <- file.path(outdir,"mRBP.ORFsEscherFAXSAFull.csv")
+write.table(mydataORF[,c(1,4)],outFile,sep = ",",na = "0",row.names = F,quote = FALSE)
+
+outFile <- file.path(outdir,"netCH.ORFsEscherFAXSAFull.csv")
+write.table(mydataORF[,c(1,5)],outFile,sep = ",",na = "0",row.names = F,quote = FALSE)
+
+
+mydataName <- newFAXSAFull[,grep("GeneName|log2",colnames(newFAXSAFull))]
+mydataName <- mydataName[!duplicated(mydataName),]
+mapNamessNotInOurData <- NamegenesinMM904[!NamegenesinMM904 %in% newFAXSAFull$GeneName]
+mydataName <- mydataName[mydataName$GeneName %in% NamegenesinMM904,]
+any(duplicated(mydataName$GeneName))
+outFile <- file.path(outdir,"NamesEscherFAXSAFull.csv")
+colnames(mydataName) <- c("","Transcriptome","Proteome","mRNABPome")
+write.table(mydataName,outFile,sep = ",",na = "0",row.names = F,quote = FALSE)
+
+
+
+mydataName <- mydataName[!duplicated(mydataName),]
+
+
+write.table(mydata,outFile,sep = ",",na = "0",row.names = F,quote = FALSE)
+newFAXSAFull$ORFgene
+
+
+all(genesinMM904 %in% newFAXSAFull$ORFgene)
+
+
+NamegenesinMM904[!NamegenesinMM904 %in% newFAXSAFull$GeneName]

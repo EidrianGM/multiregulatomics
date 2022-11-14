@@ -1,9 +1,4 @@
-library(httr)
-library(jsonlite)
-library(RCurl)
-library(plyr)
-source("GC4libR.R")
-library(openxlsx)
+setwd("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics")
 
 GSAlists <- list.files("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/geneLists/GSA",pattern = "*.txt",all.files = T,full.names = T)
 for (GSAlist in GSAlists){
@@ -25,23 +20,32 @@ for (GSAlist in GSAlists){
   write.table(results[["qc"]],qcFile,quote = F,sep = '\t',col.names = T,row.names = F)
 }
 
-
-####
-library(reshape2)
-
-gobpDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/go_bp-559292taxId_GeneCodis4.tsv")
-gobpDB$db <- "(GO BP)"
-goccDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/go_cc-559292taxId_GeneCodis4.tsv")
-goccDB$db <- "(GO CC)"
-gomfDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/go_mf-559292taxId_GeneCodis4.tsv")
-gomfDB$db <- "(GO MF)"
-keggDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/kegg-559292taxId_GeneCodis4.tsv")
-keggDB$db <- "(KEGG)"
-panthDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/panther-559292taxId_GeneCodis4.tsv")
-panthDB$db <- "(Panther)"
-allDBs <- rbind(gobpDB,goccDB,gomfDB,keggDB,panthDB)
-
+################################################################################
+######## CREATION OF GSEA DATABASE #############################################
+################################################################################
 annotsInfo <- read.delim("/home/eidriangm/Desktop/annotation_info_table.tsv")
+## UNIPROT DB
+
+# gobpDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/go_bp-559292taxId_GeneCodis4.tsv")
+# gobpDB$db <- "(GO BP)"
+# goccDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/go_cc-559292taxId_GeneCodis4.tsv")
+# goccDB$db <- "(GO CC)"
+# gomfDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/go_mf-559292taxId_GeneCodis4.tsv")
+# gomfDB$db <- "(GO MF)"
+# keggDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/kegg-559292taxId_GeneCodis4.tsv")
+# keggDB$db <- "(KEGG)"
+# panthDB <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/panther-559292taxId_GeneCodis4.tsv")
+# panthDB$db <- "(Panther)"
+
+## SYMBOL DB
+annotFiles <- list.files("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/symbolGC4",pattern = "*.tsv",full.names = T)
+allDBs <- c()
+for (annotFile in annotFiles){
+  DB <- read.delim(annotFile)
+  DB$db <- unlist(strsplit(basename(annotFile),"-"))[1]
+  allDBs <- rbind(allDBs,DB)
+}
+
 allDBs <- merge(allDBs,annotsInfo,all.x=T)
 allDBs$term <- paste(allDBs$term,allDBs$annotation_id,allDBs$db,sep = " ")
 
@@ -55,9 +59,15 @@ for (db in unique(allDBs$db)){
     gseaDB[[db]][[term]] <- allDBs$synonyms[allDBs$term == term]
     maxGeneset <- max(c(maxGeneset,length(gseaDB[[db]][[term]])))
     minGeneset <- min(c(minGeneset,length(gseaDB[[db]][[term]])))
-    write(paste(c(term,"na",gseaDB[[db]][[term]]),collapse = "\t"),paste0("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/",gsub("\\(|\\)","",db),".gmt"),append = T)
+    #write(paste(c(term,"na",gseaDB[[db]][[term]]),collapse = "\t"),paste0("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/",gsub("\\(|\\)","",db),".gmt"),append = T)
   }
 }
+
+gseaDB[[db]]
+
+################################################################################
+################################################################################
+
 
 genesprots <- allDBs$synonyms[allDBs$term == term]
 term <- "high-affinity zinc transmembrane transporter activity GO:0000006 (GO MF)"
@@ -120,7 +130,6 @@ mRNABPomeFAXfcSA <- mRNABPomeFAXfcSA[order(mRNABPomeFAXfcSA$mRNABPomeFAX.log2rat
 
 mRNABPomeFAXfcSAgeneName <- merge(mRNABPomeFAXfcSA,mRNABPomeFAXfcSAOR,all.x=T)
 
-[,c("GeneName","mRNABPomeFAX.log2ratio_PolyARNAFAXwithSA")]
 
 saveTablesTsvExc(mRNABPomeUVfcSA,ibtissamDir)
 gsea_mRNABPomeFAXfcSA <- as.array(mRNABPomeFAXfcSA$mRNABPomeFAX.log2ratio_PolyARNAFAXwithSA) 
@@ -150,7 +159,9 @@ mRNABPomeFAXfcSAfGSEARes <- mRNABPomeFAXfcSAfGSEARes[order(mRNABPomeFAXfcSAfGSEA
 write.table(mRNABPomeFAXfcSAfGSEARes,mRNABPomeFAXfcSAgseaFile,quote = F,sep = '\t',col.names = T,row.names = F)
 
 
-####
+################################################################################
+################################# RNASEQ #######################################
+################################################################################
 
 
 
