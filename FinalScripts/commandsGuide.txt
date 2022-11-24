@@ -1,0 +1,141 @@
+Usage: SafeQuant 2.3.4 [options]
+
+Options:
+	-i INPUTFILE, --inputFile=INPUTFILE
+		I/O:  Input file: Progenesis (Feature,Protein or Peptide) .csv,
+			or Scaffold Q+ (Raw Export, for TMT quant) .xls (REQUIRED)
+
+	-o OUTPUTDIR, --outputDir=OUTPUTDIR
+		I/O:  Results Output Directory [default FOLDER OF INPUTFILE]
+
+	-l RESULTSFILELABEL, --resultsFileLabel=RESULTSFILELABEL
+		I/O: results file directory [default SQ_Results]
+
+	-f FASTAFILE, --fastaFile=FASTAFILE
+		I/O:  Protein DB .fasta file [default ./]
+
+	-p SCAFFOLDPTMSPECTRUMREPORTFILE, --scaffoldPTMSpectrumReportFile=SCAFFOLDPTMSPECTRUMREPORTFILE
+		I/O:  Scaffold PTM Spectrum Report File [default ./]
+
+	-d SPREADSHEETEXPORTDELIMITER, --spreadsheetExportDelimiter=SPREADSHEETEXPORTDELIMITER
+		I/O: Spreadsheet Export Delimiter 1) <tab> 2) <,> [default 1]
+
+	--FProteinAccessionSelection=PROTEIN ACCESSION REG. EXPR.
+		FILTER: --FP Filter features by Accession Regular Expression [default .] (all features kept)
+
+	--FModificationSelection=MODIFICATION NAME REG. EXPR.
+		FILTER (LFQ PEP ONLY): --FM Only keep Peptides with modifications matching Regular Expression [default ]
+				 (all features kept).
+
+	--FFdrCutoff=PEPTIDE/PROTEIN FDR CUTOFF
+		FILTER (LFQ ONLY): --FF Identification level False Discovery Rate Cutoff.  [0-1] [default 0.01]
+
+	--FDeltaMassTolerancePrecursor=MASS RANGE [X,Y]
+		FILTER (LFQ PEP ONLY): --FD Precursor mass Error Range filter (ppm) [default AUTO SET].
+				Peptide imports ONLY
+
+	--FNumberOfPeptidesPerProteinMin=NUMBER OF PEPTIDES
+		FILTER: --FN Only include those proteins with at least x identified peptides [default 1]
+				Protein analysis ONLY.
+
+	--FSitesPerPeptide=MAX NUMBER OF PTM SITES PER PETPTIDE
+		FILTER: --FS Max Nb. Modifications Per Peptide [default Inf]
+						Peptide analysis ONLY.
+
+	--FLengthPeptide=MIN PEPTIDE LENGTH (>=)
+		FILTER: --FL Min Peptide Length (Nb. AA's) [default 1]
+						Peptide analysis ONLY.
+
+	--FExclusivePeptides
+		FILTER: --FE Discard all peptides mapping to multiple protein entries [default FALSE]
+			Note that by default all peptides are used for quantification and assigned to proteins using
+			a Occam's Razor based algorithm.
+				
+
+	--FRatioCutOff=INTENSITY RATIO CUTOFF
+		FILTER: --FR Intensity ratio cut-off. [default 1]
+
+	--TAdjustRatios
+		TMT: --TA Adjust TMT ratios using calibration mix proteins [default FALSE]
+						
+
+	--SAnchorProtein=PROTEIN ACCESSION REG. EXPR.
+		STATISTICS: --SA Normalize Intensities by selected protein(s) Regular Expression
+			 [default .] (use all proteins).
+
+	--SMissingValuesImutationMethod= PPCA: PROBABILISTIC PCA (+ GMIN, IF NOT ENOUGH DATA)
+                            KNN: K-NEAREST NEIGHBOUR (+ GMIN, IF NOT ENOUGH DATA)
+                            GMIN: GLOBAL MINIMUM
+                            LMIN: LOCAL MINIMUM
+                            GMEAN: GLOBAL MEAN
+                            LMEAN: LOCAL MEAN
+            
+		STATISTICS: --SM 'ppca', 'knn','gMin','lMin','gMean,'lMean',
+            [default knn] (use all proteins).
+
+	--SNonPairWiseStatTest
+		STATISTICS: --SN non pairwise eBayes moderated t-statistic p-values.
+              I.e. variance is pooled, per protein/peptide, across all runs of the study [default FALSE]
+
+	--SPvalueInclude
+		STATISTICS: --SP output eBayes moderated t-statistic p-values [default FALSE]
+
+	--SRawDataAnalysis
+		STATISTICS: --SR No data normalization [default FALSE]
+
+	--EXperimentalDesign=EXPERIMENTALDESIGN
+		EXPERIMENTAL DESIGN: --EX "," seperated samples, ":" separated conditions
+					Example: 1,2,3:4,5,6
+					   condition1 (REF) : channel 1,2,3
+					   condition2: channel 4,5,6
+					Note: for 10-plex default is "1,4,7,10:2,5,8:3,6,9"
+					[default NA]
+
+	--EProteinQuantOff
+		EXPERIMENTAL DESIGN: --EP Disable Protein Level Quantification [default TRUE]
+
+	--ECorrelatedSamples 
+		EXPERIMENTAL DESIGN: --EC Apply "paired" statistical tests [default FALSE]
+
+	--PQvalueCutOff=DIFFERENTIAL EXPRESSION QVALUE CUTOFF
+		PDF-REPORT: --PQ Qvalue cut-off used for graphics.
+			High-lighting features with a qval < specified value. [0-1] [default 0.01]
+
+	--ARDataFile
+		ADDITIONAL-REPORTS: --AR Save R objects in 'label'.RData file [default FALSE]
+
+	--AIbaq
+		ADDITIONAL-REPORTS : --AI add iBAQ values to results spreadsheet. [default FALSE]
+
+	--ATop3
+		ADDITIONAL-REPORTS : --AT add Top3 values to results spreadsheet. [default FALSE]
+
+	--AQC
+		ADDITIONAL-REPORTS : --AQ adds additional QC plots to .pdf report [default FALSE]
+
+	-t, --test
+		TEST: test option, include first 2000 entries only [default FALSE]
+			Peptide analysis ONLY.
+
+	-v, --verbose
+		Print extra output [default FALSE]
+
+	-h, --help
+		Show this help message and exit
+
+Examples:
+	Progenesis LFQ Protein Quant:
+	>Rscript safeQuant.R -i /path/to/peptide_measurment.csv
+
+	Progenesis LFQ Protein Quant (QE):
+	>Rscript safeQuant.R -i /path/to/peptide_measurment.csv --FL 7
+
+	Progenesis LFQ Phospho Quant:
+	>Rscript safeQuant.R -i /path/to/peptide_measurment.csv -f /path/to/proteins.fasta --FM phospho --FS 3 --EP
+
+	Scaffold Q+ TMT Protein Quant:
+	>Rscript safeQuant.R -i /path/to/Raw_Export.xls --EX 1,2,3,4:5,6,7:8,9,10
+
+	Scaffold Q+ TMT  PEPTIDE PTM Quant (PHOSHO):
+	>Rscript safeQuant.R -i /path/to/Raw_Export.xls -p /path/to/Spectrum_Export_Scaffold_PTM.xls --EX 1,2,3,4:5,6,7:8,9,10 --FM phospho --FS 3 -f /path/to/proteins.fasta
+
