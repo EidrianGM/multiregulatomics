@@ -43,7 +43,7 @@ launchAnalysis <- function(organism,inputType,inputQuery,annotationsDBs,enrichme
   print('Performing the analyses...')
   request<-httr::POST(url = requestJobURL, body=jsonparams, encode="json", content_type("application/json"))
   #check if analysis has finished
-  request_content=content(request,"text")
+  request_content=httr::content(request,"text")
   if(status_code(request)!=200){
     stop(request_content)
   }
@@ -52,16 +52,16 @@ launchAnalysis <- function(organism,inputType,inputQuery,annotationsDBs,enrichme
   stateURL = paste0(urlBase,"analysisResults?job=",params$gc4uid)
   #make request to GeneCodis
   request = GET(stateURL)
-  status=content(GET(paste0(urlBase,"checkstate?job=",params$gc4uid)))
+  status=httr::content(GET(paste0(urlBase,"checkstate?job=",params$gc4uid)))
   while(status$state=="PENDING"){
-    status=content(GET(paste0(urlBase,"checkstate?job=",params$gc4uid)))
+    status=httr::content(GET(paste0(urlBase,"checkstate?job=",params$gc4uid)))
   }
   request = GET(stateURL)
   #check if error happens and stop execution
   warn_for_status(request)
   stop_for_status(request)
   #get content of request
-  request_content=content(request,"text")
+  request_content=httr::content(request,"text")
   #check if user reached rate limit
   if(checkRatelimit(request_content)==TRUE){
     stop("You have exceeded the GeneCodis rate-limit, which is 10 requests per minute. If you think you may need a further access to GeneCodis please contact us at bioinfo@genyo.es")
@@ -89,7 +89,7 @@ getResults <- function(gc4uid){
   #check if error happens and stop execution
   warn_for_status(request)
   stop_for_status(request)
-  result=content(request,"text")
+  result=httr::content(request,"text")
   result <- fromJSON(result)
   for(lista in names(result)){
     temp1=t.data.frame(data.frame(matrix(unlist(result[[lista]]), nrow=length(result[[lista]]), byrow=TRUE)))
@@ -104,7 +104,7 @@ getResults <- function(gc4uid){
   #check if error happens and stop execution
   warn_for_status(request)
   stop_for_status(request)
-  result=content(request,"text")
+  result=httr::content(request,"text")
   result=fromJSON(result)
   results[["quality_controls"]]=c(result)
   return(results)
@@ -139,7 +139,7 @@ queryGenes <- function(genes,orgs,databases){
   #check if error happens and stop execution
   warn_for_status(request)
   stop_for_status(request)
-  result=content(request,"parsed")
+  result=httr::content(request,"parsed")
   table=read.csv(text=result,header = TRUE,sep="\t")  
   print("Query finished")
   return(table)

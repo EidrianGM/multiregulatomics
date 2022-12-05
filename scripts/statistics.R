@@ -4,7 +4,7 @@
 ## Shall we remove this one? 
 # P445_Prot_DIA_iBAQ_noOutliers_nocomb_20220826_Final	P445_Prot_DIA_iBAQ_noOutliers_nocomb_20220826_UV_Final	UVX stress-induced proteome  	Proteome 	UVX	SA	iBAQ 22	22	UV+ sodium acetate (1)	Yes 	4	8/26/2022	old
 
-projectBaseDir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data"
+projectBaseDir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics"
 setwd(projectBaseDir)
 
 mappingFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/mapping/wholeDF.xlsx"
@@ -12,7 +12,7 @@ mappingDF <- read.xlsx(mappingFile)
 mappingDF <- mappingDF[c(1:17)]
 mappingDF <- mappingDF[!duplicated(mappingDF),]
 
-basePhenoData <- read.xlsx("phenoData.xlsx")
+basePhenoData <- read.xlsx("data/phenoData.xlsx")
 basePhenoData <- as.data.frame(apply(basePhenoData,2,function(x)gsub('\\s+', '',x)))
 
 normalised <- "Yes";  mytreatment <- "SA"; control <- "no"
@@ -29,12 +29,14 @@ mrbpomeUVXphenoD <- basePhenoData[basePhenoData$Treatment %in% c(control,mytreat
                                     basePhenoData$Data == datatype & 
                                     basePhenoData$Crosslinking == crosslink,]
 
-subfolderpath <- unique(paste(projectBaseDir,mrbpomeUVXphenoD$folderdate,mrbpomeUVXphenoD$Folder.name,mrbpomeUVXphenoD$Subfolder.name,sep = "/"))
+subfolderpath <- unique(paste(projectBaseDir,"data",mrbpomeUVXphenoD$folderdate,mrbpomeUVXphenoD$Folder.name,mrbpomeUVXphenoD$Subfolder.name,sep = "/"))
 dataFile <- list.files(subfolderpath,pattern = "*PROTEIN.tsv",full.names = T)
 
 ourPhenoData <- mrbpomeUVXphenoD[!mrbpomeUVXphenoD$Run.number %in% c(16,3),]
 outdir <- paste0("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/adrian/",datatype,crosslink,mytreatment,"no16-3")
-basicAnalysis(dataFile,ourPhenoData,outdir,mytreatment,mappingDF)
+tagname <- paste0(datatype,crosslink,mytreatment,"no16-3")
+basicAnalysis(dataFile,ourPhenoData,outdir,tagname,mytreatment,mappingDF)
+
 
 #### FAX
 crosslink <- "FAX"

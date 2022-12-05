@@ -49,3 +49,7 @@ adrian/
 network/
 scripts/SafeQuant-2.3.4/
 QualityControl/
+*.gz
+*.tiff
+*.png
+FinalData/

@@ -1,4 +1,5 @@
 # Load libraries
+setwd("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/")
 library(ggVennDiagram)
 library(Biobase)
 library(limma)
@@ -22,8 +23,8 @@ library(httr)
 library(jsonlite)
 library(RCurl)
 library(plyr)
-source("scripts/GC4libR.R")
 library(reshape2)
+source("scripts/GC4libR.R")
 
 summaryGC4results <- function(GC4res,outfile){
   allQC <- c()
@@ -66,6 +67,7 @@ completeNdedup <- function(DF){
 }
 
 saveTablesTsvExc <- function(DF,outdir,completeNdedup=T,excel=T,bycompleteFC=T,rownames=F){
+  dir.create(outdir,F,T)
   outname <- deparse(substitute(DF))
   if (class(DF) == "data.frame"){
     if (nrow(DF) == 0){
@@ -87,14 +89,18 @@ saveTablesTsvExc <- function(DF,outdir,completeNdedup=T,excel=T,bycompleteFC=T,r
       }
     }
   } else{
-    if (length(DF) == 0){
+    myvector <- unique(na.omit(DF))
+    if (length(myvector) == 0){
       print("Empty Vector")
     }else{
       outFile <- paste0(file.path(outdir,outname),".txt")
-      write(unique(na.omit(DF)),outFile,sep = "\n")
+      write(myvector,outFile,sep = "\n")
     }
   }
 }
+
+####
+
 
 transformFCto1scale <- function(log2fcarray){
   log2fcarray <- log2fcarray + abs(min(log2fcarray))
@@ -196,66 +202,15 @@ basicAnalysis <- function(dataFile,ourPhenoData,outdir,tagname,mytreatment,mappi
   
   expresionMatrix <- expresionMatrix[subPhenData$cols]
   
-  myDF$ac <- gsub("-.*","",myDF$ac)
-  expresionMatrix <- cbind(acc=myDF$ac,expresionMatrix)
-  expresionMatrix <- as.data.frame(summarise_all(group_by(expresionMatrix,acc),mean))
+  #expresionMatrix <- cbind(acc=myDF$ac,expresionMatrix)
+  #expresionMatrix <- as.data.frame(summarise_all(group_by(expresionMatrix,acc),mean))
+  #expresionMatrixMapped <- merge(mappingDF,expresionMatrix,by.x = "UniprotACC",by.y = "acc")
+  #saveTablesTsvExc(expresionMatrixMapped,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames = F)
+  #saveTablesTsvExc(subPhenData,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames = T)
   
-  expresionMatrixMapped <- merge(mappingDF,expresionMatrix,by.x = "UniprotACC",by.y = "acc")
-  saveTablesTsvExc(expresionMatrixMapped,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames = F)
-  saveTablesTsvExc(subPhenData,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames = T)
-  
-  row.names(expresionMatrix) <- expresionMatrix$acc
-  expresionMatrix$acc <- NULL
-  ###################
-  ## Visualiztions ##
-  ###################
-  
-  ## To detect sample outliers (Outlier= 1*5 Inter Quartile Range)
-  classes <- levels(as.factor(subPhenData[,conditionCol]))
-  colors <- paletteer_dynamic("cartography::multi.pal", length(classes))[1:length(classes)]; names(colors) <- classes
-  allColors <- colors[match(subPhenData[,conditionCol],names(colors))]
-  
-  png(file.path(outdir,paste0(tagname,'_BoxPlot.png')), 1000, 1000, pointsize = 20,res = "print")
-  par(mar=c(17,2,1,1))
-  print(boxplot(log2(expresionMatrix),main=paste("Log2 Expr",'mrbpome',crosslink),
-                at=c(1:ncol(expresionMatrix)),las=2,horizontal=F,
-                notch=F, bty='L',col=allColors,range=100,height=1500, units='px'))
-  print(legend("bottom", legend=classes,fill=colors, horiz=TRUE, cex=1,y = -10))
-  dev.off()
-  
-  pcares <- prcomp(t(expresionMatrix))
-  png(file.path(outdir,paste0(tagname,'_PCA2D.png')), 600, 500, pointsize=50, res = 100)
-  print(ggplot2::autoplot(pcares,data = data.frame(t(expresionMatrix),class=subPhenData[,conditionCol]),
-                          colour="class", label=T, label.size=2,label.repel=T,main = tagname) + 
-          scale_color_manual(values = unique(as.vector(colors)))+ theme_classic())
-  dev.off()
-  
-  pcaVarGroup <- round((pcares$sdev)^2 / sum(pcares$sdev^2) *100, 2)
-  png(file.path(outdir,paste0(tagname,'_PCA3D.png')), 1200, 900, pointsize=12,res = "print")
-  pca3d <- scatterplot3d(pcares$x[,1], pcares$x[,3], pcares$x[,2],color = as.vector(allColors),
-                         main = tagname, xlab = paste0("PC 1 (", pcaVarGroup[1], " %)"),
-                         zlab = paste0("PC 2 (", pcaVarGroup[2], " %)"), ylab = paste0("PC 3 (", pcaVarGroup[3], " %)"),
-                         grid=T, box = T, pch = 20, cex.symbols = 2.5, angle = 40,type = "h")
-  zz.coords <- pca3d$xyz.convert(pcares$x[,1], pcares$x[,3], pcares$x[,2])
-  legend("topright", pch=20, legend = classes, col = unique(as.vector(allColors)),inset = 0,y.intersp =0.8)
-  text(zz.coords$x, zz.coords$y, labels = row.names(pcares$x),cex = 0.5, pos = 4,col = as.vector(allColors))
-  dev.off()
-  
-  corMat <- cor(expresionMatrix,method = "pearson")
-  png(file.path(outdir,paste0(tagname,'_CorrPlot.png')), 1200, 900, pointsize=12,res = "print")
-  corrplot(corMat, method = 'circle', order = 'original',tl.cex=0.5,title=tagname,
-           mar = c(0, 1, 2, 1),tl.pos = 'lt',addCoef.col = "grey",number.cex = 0.5,
-           col=rev(COL2('RdBu', 200)))
-  dev.off()
-  
-  toHMP <- t(scale(t(expresionMatrix)))
-  toHMP[is.na(toHMP)] <- 0
-  col_fun <- colorRamp2(c(min(toHMP,na.rm = T),0,max(toHMP,na.rm = T)), c("blue","white","red"))
-  column_ha <- HeatmapAnnotation(treatment = subPhenData[,conditionCol])
-  png(file.path(outdir,paste0(tagname,'_HeatMap.png')), 1200, 900, pointsize=12,res = "print")
-  print(Heatmap(toHMP,cluster_columns = F, cluster_rows = T,col=col_fun,top_annotation = column_ha,show_row_names = F,show_row_dend = F))
-  dev.off()
-  
+  row.names(expresionMatrix) <- myDF$proteinName
+  someVisualization(expresionMatrix,outdir,tagname,subPhenData)
+
   ### PREPARE DATA 
   subPhenData[,conditionCol] <- as.factor(subPhenData[,conditionCol])
   phenoD <- AnnotatedDataFrame(data=subPhenData[,conditionCol,drop=FALSE])
@@ -304,17 +259,15 @@ getPlotsRawData <- function(inFile,tagname){
   #someVisualization(rawData,outdir,paste0("raw",tagname))
 }
 
-expresionMatrix <- normData
-
 someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
-  logfile <- file.path(outdir,paste0(tagname,".log"))
-  
+
   if (class(subPhenData) == "logical"){
     expresionMatrix[2,] <- gsub("_.*","",expresionMatrix[2,])
     subPhenData <- as.data.frame(t(expresionMatrix[1:2,])); colnames(subPhenData) <- c("class","id"); rownames(subPhenData) <- subPhenData[,2]
     colnames(expresionMatrix) <- expresionMatrix[2,]; expresionMatrix <- expresionMatrix[3:nrow(expresionMatrix),]; expresionMatrix <- type.convert(expresionMatrix)
     subPhenData$class <- gsub(".*\\s","",subPhenData$class)
   }
+  
   conditionCol <- "class"
   classes <- levels(as.factor(subPhenData[,conditionCol]))
   colors <- paletteer_dynamic("cartography::multi.pal", length(classes))[1:length(classes)]; names(colors) <- classes
@@ -330,18 +283,19 @@ someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
         ggtitle(gsub("_"," ",tagname)) + xlab("")
   ggsave(file.path(outdir,paste0(tagname,'_BoxPlot.tiff')),myBox,device="tiff",units = "px",dpi=300)
   
+  sum(SamplesMissingInGenes == ncol(expresionMatrix))
+  
   if (any(is.na(expresionMatrix))){
     SamplesMissingInGenes <- apply(is.na(expresionMatrix),1,sum)
     GenesMissingInSamples <- round(apply(is.na(expresionMatrix),2,sum) / nrow(expresionMatrix) * 100,2)
-    
     column_ha = HeatmapAnnotation(GenesMissing = anno_barplot(GenesMissingInSamples,add_numbers = T,
                                                               numbers_rot=0,numbers_offset = unit(1, "mm"),
                                                               numbers_gp=gpar(fontsize = 6)),
                                   treatment = subPhenData[,conditionCol],col = colorsMatch)
-    row_ha = rowAnnotation(SamplesMissing = anno_barplot(SamplesMissingInGenes))
-    toHMP <- t(scale(t(expresionMatrix)))
+    row_ha = rowAnnotation(SamplesMissing = anno_barplot(SamplesMissingInGenes[1:15000]))
+    toHMP <- t(scale(t(expresionMatrix)))[1:15000,]
     col_fun <- colorRamp2(c(min(toHMP,na.rm = T),0,max(toHMP,na.rm = T)), c("blue","white","red"))
-    tiff(file.path(outdir,paste0(tagname,'_NAs_HeatMap.tiff')), 2000, 1200, pointsize=5, res = 300)
+    tiff(file.path(outdir,paste0(tagname,'_NAs_HeatMap.tiff')), ncol(toHMP) * 120, 1500, pointsize=5, res = 300)
     print(
     Heatmap(toHMP, cluster_columns=F, cluster_rows=F, col=col_fun,
             top_annotation=column_ha, right_annotation=row_ha,
@@ -349,13 +303,13 @@ someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
             show_heatmap_legend=F,  column_title_gp=gpar(fontsize = 6),
             column_names_gp = gpar(fontsize = 6),
             row_names_gp = gpar(fontsize = 6))
+            #, width = ncol(toHMP)*unit(10, "mm")
+            #, height = nrow(toHMAP)*unit(5, "mm")) 
     )
     dev.off()
   }
 
   expresionMatrix <- na.omit(expresionMatrix)
-
-  write(paste0("Quality Control plots calculated with peptides: ",nrow(expresionMatrix)),logfile,append = T)
   
   pcares <- prcomp(t(expresionMatrix))
   tiff(file.path(outdir,paste0(tagname,'_PCA2D.tiff')), 1500, 1500, pointsize=12, res = 300)
@@ -388,10 +342,11 @@ someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
   dev.off()
   
   corMat <- cor(expresionMatrix,method = "pearson")
+  
   col_fun <- colorRamp2(c(min(toHMP,na.rm = T),0,max(toHMP,na.rm = T)), c("blue","white","red"))
-  tiff(file.path(outdir,paste0(tagname,'_CorrPlot.tiff')), 1500, 1500, pointsize=10, res = 300)
+  tiff(file.path(outdir,paste0(tagname,'_CorrPlot.tiff')), ncol(toHMP) * 80, ncol(toHMP) * 80, pointsize=10, res = 300)
   corrplot(corMat, method = 'circle', type = 'upper', order = 'original', tl.cex=1, title=tagname,
-            tl.col = allColors,tl.srt = 45,cl.ratio = 0.2, number.cex = 0.7,
+            tl.col = allColors,tl.srt = 45,cl.ratio = 0.2, number.cex = 0.6,
             mar = c(5, 1, 2, 1),tl.pos = 'lt',addCoef.col = "grey",
             col=rev(COL2('RdBu', 200)))
   print(legend("bottom", legend=classes,fill=colors, horiz=T, cex=0.5,y = 0, bty = "n"))

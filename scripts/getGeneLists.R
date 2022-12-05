@@ -1,17 +1,27 @@
 ##########################
 ##### FILTERING DATA #####
 ##########################
-wholeDF <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/mapped/wholeDF.tsv",quote = "")
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/geneLists"
+wholeDFFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/wholeDF.tsv"
+wholeDF <- read.delim(wholeDFFile,quote = "")
+
+outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists"
 
 IDs <- c("UniprotACC","GeneName","Protein.names") # rbpomeID <- IDs
 DEGpvalCut <- 0.01
 DEGfcCut   <- 1
 
 protsPvalCut <- 0.05
-protsFcCut <- 1 # netChangesCut <- protsFcCut
+protsFcCut <- 1 
 
 # 1- Differentially Expressed Genes
+
+wholeDF$DEGs.log2FC.SA.YPD
+wholeDF$DEGs.log2FC.SA.YPD
+wholeDF$ProteomeFAX.log2ratio_FAXwithSA
+wholeDF$ProteomeFAX.qValue_FAXwithSA
+wholeDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA
+wholeDF$RBPomeFAX.qValue_PolyARNAFAXwithSA
+wholeDF$FAXnetchangesSA
 
 DEGsH202 <- wholeDF[wholeDF$DEGs.adj.pval.H202.YPD < DEGpvalCut & abs(wholeDF$DEGs.log2FC.H202.YPD) > DEGfcCut,"GeneName"]
 DEGsDTT <- wholeDF[wholeDF$DEGs.adj.pval.DTT.YPD < DEGpvalCut  & abs(wholeDF$DEGs.log2FC.DTT.YPD) > DEGfcCut,"GeneName"]

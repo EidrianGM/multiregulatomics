@@ -112,3 +112,29 @@ cmd <- paste("Rscript",commandExec,"-i",Proteomefile,"-l",outfilesLabel,"--EX ",
 cat(cmd)
 system(cmd)
 
+
+###### BACKGROUND REMOVAL
+## removing samples: 
+
+rawRBPomeNOXfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/MQtoSQ.csv"
+rawRBPomeNOXSamplesInfo <- read.delim(rawRBPomeNOXfile,nrows = 3, sep = ",")
+myDF <- rawRBPomeNOXSamplesInfo
+
+normDCol <- grep("Norm",colnames(myDF)) # Raw Normalized Values are not the ones!
+rawDCol <- grep("Raw",colnames(myDF))
+expresionMatrix <- myDF[normDCol:(rawDCol-1)] 
+expresionMatrix[2,] <- gsub("_.*","",expresionMatrix[2,])
+subPhenData <- as.data.frame(t(expresionMatrix[1:2,])); colnames(subPhenData) <- c("class","id"); 
+subPhenData$class <- gsub(".*\\s","",subPhenData$class); conditionCol <- "class"
+subPhenData$class <- gsub("no.*|with.*","",subPhenData$class)
+rownames(subPhenData) <- 1:nrow(subPhenData)
+expDesignTag <- c()
+for (class in c("NOX","FAX","UV")){
+  expDesignTag <- c(expDesignTag,paste(rownames(subPhenData)[subPhenData$class == class],collapse=","))
+}
+expDesignTag <- paste0('"',paste(expDesignTag,collapse = ":"),'"')
+outfilesLabel <- "RBPomeNOX_np2_norm"
+cmd <- paste("Rscript",commandExec,"-i",rawRBPomeNOXfile,"-l",outfilesLabel,"--EX ",expDesignTag," --FN 2 --SM no")
+cat(cmd)
+system(cmd)
+

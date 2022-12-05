@@ -341,7 +341,7 @@ ggplot(toIbtissam, aes(x = factor(experiment), fill = factor(gene), y = fc,label
 
 #nudge_x=0.1,nudge_y=0.1)
 
-# order mRBPome, Proteome, NetC, DGE
+# order DGE, Proteome, mRBPome, NetC
 
 #######################
 #### Venn Diagram #####

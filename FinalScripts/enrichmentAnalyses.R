@@ -5,29 +5,38 @@ setwd("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics")
 ################################################################################
 ############### 1. OVERREPRESENTATION ANALYSIS WITH GENECODIS4 #################
 ################################################################################
-dirWithGeneLists <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORA"
-GSAlists <- list.files(dirWithGeneLists,pattern = "*.txt",all.files = T,full.names = T)
-
-outdir <- gsub("GeneLists","EnrichmentResults",dirWithGeneLists)
-dir.create(outdir,recursive = T,showWarnings = F)
-for (GSAlist in GSAlists){
-  siggenes <- read.delim(GSAlist,header = F)[,1]
-  enrFile <- gsub(".txt",".Enr.tsv",gsub("GeneLists","EnrichmentResults",GSAlist),fixed = T) # ORA results
-  qcFile <- gsub(".txt",".QCEnr.tsv",gsub("GeneLists","EnrichmentResults",GSAlist),fixed = T) # Quality Control of ORA
-  if (file.exists(qcFile)){next}
-  resultado <- launchAnalysis(organism = "Saccharomyces cerevisiae",
-                              inputType = "genes",
-                              inputQuery = siggenes,
-                              annotationsDBs = c("KEGG","GO_BP","GO_CC","GO_MF"),
-                              inputCoannotation = "no",
-                              universeScope = "annotated",
-                              enrichmentStat = "hypergeom",
-                              ReportName=gsub(".tsv|.txt","",basename(GSAlist)))
-  
-  results <- summaryGC4results(resultado)
-  write.table(results[["enr"]],enrFile,quote = F,sep = '\t',col.names = T,row.names = F)
-  write.table(results[["qc"]],qcFile,quote = F,sep = '\t',col.names = T,row.names = F)
+doGC4ORA <- function(dirWithGeneLists,orthologs=TRUE){
+  GSAlists <- list.files(dirWithGeneLists,pattern = "*.txt",all.files = T,full.names = T)
+  outdir <- gsub("GeneLists","EnrichmentResults",dirWithGeneLists)
+  dir.create(outdir,recursive = T,showWarnings = F)
+  for (GSAlist in GSAlists){
+    siggenes <- read.delim(GSAlist,header = F)[,1]
+    if (any(grepl(";",siggenes)) & orthologs){
+      siggenes <- unique(unlist(strsplit(siggenes,";")))
+    }
+    enrFile <- gsub(".txt",".Enr.tsv",gsub("GeneLists","EnrichmentResults",GSAlist),fixed = T) # ORA results
+    qcFile <- gsub(".txt",".QCEnr.tsv",gsub("GeneLists","EnrichmentResults",GSAlist),fixed = T) # Quality Control of ORA
+    if (file.exists(qcFile)){next}
+    resultado <- launchAnalysis(organism = "Saccharomyces cerevisiae",
+                                inputType = "genes",
+                                inputQuery = siggenes,
+                                annotationsDBs = c("KEGG","GO_BP","GO_CC","GO_MF"),
+                                inputCoannotation = "no",
+                                universeScope = "annotated",
+                                enrichmentStat = "hypergeom",
+                                ReportName=gsub(".tsv|.txt","",basename(GSAlist)))
+    
+    results <- summaryGC4results(resultado)
+    write.table(results[["enr"]],enrFile,quote = F,sep = '\t',col.names = T,row.names = F)
+    write.table(results[["qc"]],qcFile,quote = F,sep = '\t',col.names = T,row.names = F)
+  }
 }
+
+dirWithGeneLists <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORA"
+doGC4ORA(dirWithGeneLists,orthologs=TRUE)
+
+dirWithGeneLists <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORAseparatedUpnDw"
+doGC4ORA(dirWithGeneLists,orthologs=TRUE)
 
 ################################################################################
 ################################# 2. GSEA  #####################################
@@ -65,22 +74,19 @@ for (db in unique(allDBs$db)){
 
 ################################################################################
 ################################################################################
-SAdegsGSEAFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
-SAProteomeFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAProteomeFAXgsea.tsv"
-SARBPomeFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SARBPomeFAXgsea.tsv"
-SAnetchangesFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAnetchangesFAXgsea.tsv"
-SAdegsGSEAFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
-SAProteomeUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAProteomeUVXgsea.tsv"
-SARBPomeUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SARBPomeUVXgsea.tsv"
-SAnetchangesUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAnetchangesUVXgsea.tsv"
+library(tidyr)
+library(fgsea)
 
-doGSEAs <- function(GSEAFile,gseaDB,minGeneset,maxGeneset) {
+doGSEAs <- function(GSEAFile,gseaDB,minGeneset,maxGeneset, orthologs=T) {
   outfile <- gsub("GeneLists","EnrichmentResults",GSEAFile)
   if (file.exists(outfile)){
     cat("Done")
     return()
   }
   GSEAdf <- read.delim(GSEAFile)
+  if (any(grepl(";",GSEAdf[,1])) & orthologs){
+    GSEAdf <- as.data.frame(separate_rows(GSEAdf,1,sep = ";"))
+  }
   dupgeprots <- sum(duplicated(GSEAdf[,1]))
   if (dupgeprots > 0){
     cat("Gene/Prots Duplicated: ",dupgeprots, "... collapsing by FC average")
@@ -94,7 +100,7 @@ doGSEAs <- function(GSEAFile,gseaDB,minGeneset,maxGeneset) {
   allGSEAres <- c()
   for (db in names(gseaDB)){
     dbName <- gsub("\\(|\\)","",db)
-    gseaRes <- fgsea(pathways = gseaDB[[db]], stats = inputRank, minSize  = minGeneset, maxSize  = maxGeneset)
+    gseaRes <- fgsea(pathways = gseaDB[[db]], stats = inputRank, minSize  = minGeneset, maxSize  = maxGeneset, eps=0)
     gseaRes$db <- db
     allGSEAres <- rbind(allGSEAres,gseaRes)
   }
@@ -104,6 +110,15 @@ doGSEAs <- function(GSEAFile,gseaDB,minGeneset,maxGeneset) {
   write.table(allGSEAres,outfile,quote = F,sep = '\t',col.names = T,row.names = F)
   return(allGSEAres)
 }
+
+SAdegsGSEAFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
+SAProteomeFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAProteomeFAXgsea.tsv"
+SARBPomeFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SARBPomeFAXgsea.tsv"
+SAnetchangesFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAnetchangesFAXgsea.tsv"
+SAdegsGSEAFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
+SAProteomeUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAProteomeUVXgsea.tsv"
+SARBPomeUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SARBPomeUVXgsea.tsv"
+SAnetchangesUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAnetchangesUVXgsea.tsv"
 
 SAdegsGSEA <- doGSEAs(SAdegsGSEAFile,gseaDB,minGeneset,maxGeneset)
 SAProteomeFAXgsea <- doGSEAs(SAProteomeFAXgseaFile,gseaDB,minGeneset,maxGeneset)
