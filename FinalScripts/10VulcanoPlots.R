@@ -1,7 +1,15 @@
 library(EnhancedVolcano)
+source("FinalScripts/functionOmics.R")
 
-wholeDFFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/allDataDF.tsv"
+
+wholeDFFile <- "FinalData/allDataDF.tsv"
 wholeDF <- read.delim(wholeDFFile,quote = "")
+
+FAXacceptedProts <- read.delim("FinalData/BackgroundRemoval/FAXAccBackGrAcceptedFC3.tsv",header = F)[,1]
+UVXacceptedProts <- read.delim("FinalData/BackgroundRemoval/UVXAccBackGrAcceptedFC3.tsv",header = F)[,1]
+
+wholeDF <- wholeDF[wholeDF$proteinName %in% c(FAXacceptedProts,UVXacceptedProts),]
+
 
 fcColumns <- c("DEGs.log2FC.H202.YPD",                  "DEGs.log2FC.DTT.YPD",                     "DEGs.log2FC.SA.YPD",                     
                "ProteomeFAX.log2ratio_FAXwithDTT",      "RBPomeFAX.log2ratio_PolyARNAFAXwithDTT",  "FAXnetchangesDTT",                         
@@ -47,26 +55,5 @@ for (idx in 1:length(fcColumns)){
                                               "FDR", expression(FDR~and~log[2]~FC)))
   ggsave(paste0(outFile,".tiff"), plot = volcano, device = 'tiff', scale = 1, dpi = 300,width = 25,height = 25,units = 'cm')
 }
-
-
-myfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/new/PolyA_RIC_nonorm_20220928/P445_AG_PolyA_40_20220617_gmin_UV_nonorm_p2_NOX_Final/P445_AG_PolyA_40_20220617_gmin_UV_nonorm_p2_NOX_PROTEIN.tsv"
-NOXfd <- read.delim(myfile)
-
-volcano <- EnhancedVolcano(NOXfd,x = 'log2ratio_Condition2',y = "qValue_Condition2",
-                           lab = "FAX_FC3", title = "FAX",subtitle = '',
-                           FCcutoff = 3, pCutoff=0.05, selectLab = F,
-                           legendLabels = c('FC', expression(Log[2]~FC),
-                                            "FDR", expression(FDR~and~log[2]~FC)))
-outFile <- "NOXcondition2"
-ggsave(paste0(outFile,".tiff"), plot = volcano, device = 'tiff', scale = 1, dpi = 300,width = 25,height = 25,units = 'cm')
-
-subDF <- complete.cases(NOXfd[,c("log2ratio_Condition3","qValue_Condition3")])
-volcano <- EnhancedVolcano(NOXfd,x = 'log2ratio_Condition3',y = "qValue_Condition3",
-                           lab = "UVX_FC3", title = "UVX",subtitle = '',
-                           FCcutoff = 3, pCutoff=0.05, selectLab = F,
-                           legendLabels = c('FC', expression(Log[2]~FC),
-                                            "FDR", expression(FDR~and~log[2]~FC)))
-outFile <- "NOXcondition3"
-ggsave(paste0(outFile,".tiff"), plot = volcano, device = 'tiff', scale = 1, dpi = 300,width = 25,height = 25,units = 'cm')
 
 

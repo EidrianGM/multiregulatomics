@@ -32,6 +32,11 @@ createHMP <- function(toHMP,pValstoHMP,colsplit,colannot,outdir,tagname,rowsplit
 wholeDFfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/allDataDF.tsv"
 wholeDF <- read.delim(wholeDFfile,quote = "")
 
+FAXacceptedProts <- read.delim("FinalData/BackgroundRemoval/FAXAccBackGrAcceptedFC3.tsv",header = F)[,1]
+UVXacceptedProts <- read.delim("FinalData/BackgroundRemoval/UVXAccBackGrAcceptedFC3.tsv",header = F)[,1]
+
+wholeDF <- wholeDF[wholeDF$proteinName %in% c(FAXacceptedProts,UVXacceptedProts),]
+
 outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/HeatMaps"
 
 
@@ -65,6 +70,8 @@ colannot <- HeatmapAnnotation(datatype=phenoData$datatype,
 
 #### Whole RBPomes UVX + FAX
 highlightGenes <- which(wholeDF$RBPomeFAX.qValue_PolyARNAFAXwithSA < 0.05 | wholeDF$RBPomeUVX.qValue_PolyARNAUVwithSA < 0.05)
+
+length(highlightGenes)
 
 pValstoHMP <- wholeDF[highlightGenes,c("proteinName",pvalsCols)]
 toHMP <- wholeDF[highlightGenes,c("proteinName",infoColumns)]

@@ -53,3 +53,4 @@ QualityControl/
 *.tiff
 *.png
 FinalData/
+*.tsv

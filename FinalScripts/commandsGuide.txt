@@ -63,11 +63,11 @@ Options:
 		STATISTICS: --SA Normalize Intensities by selected protein(s) Regular Expression
 			 [default .] (use all proteins).
 
-	--SMissingValuesImutationMethod= PPCA: PROBABILISTIC PCA (+ GMIN, IF NOT ENOUGH DATA)
+	--SMissingValuesImutationd= PPCA: PROBABILISTIC PCA (+ GMIN, IF NOT ENOUGH DATA)
                             KNN: K-NEAREST NEIGHBOUR (+ GMIN, IF NOT ENOUGH DATA)
                             GMIN: GLOBAL MINIMUM
                             LMIN: LOCAL MINIMUM
-                            GMEAN: GLOBAL MEAN
+                            G: GLOBAL MEAN
                             LMEAN: LOCAL MEAN
             
 		STATISTICS: --SM 'ppca', 'knn','gMin','lMin','gMean,'lMean',

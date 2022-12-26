@@ -1,10 +1,17 @@
-wholeDFFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/allDataDF.tsv"
+wholeDFFile <- "FinalData/allDataDF.tsv"
 wholeDF <- read.delim(wholeDFFile,quote = "")
+
+FAXacceptedProts <- read.delim("FinalData/BackgroundRemoval/FAXAccBackGrAcceptedFC3.tsv",header = F)[,1]
+UVXacceptedProts <- read.delim("FinalData/BackgroundRemoval/UVXAccBackGrAcceptedFC3.tsv",header = F)[,1]
+
+outdir <- 'FinalData/'
+saveTablesTsvExc(FAXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+saveTablesTsvExc(UVXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 ################################################################################
 ######### Generation of GeneLists for Enrichment Analyses ORA and GSEA #########
 ################################################################################
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists"
+outdir <- "FinalData/GeneLists"
 
 DEGsIDs <- c("UniprotACC") # Is the one with most significant annotated in GC4
 ProtIDs <- c("proteinName") # To also consider orthologues that will be splited for ORA
@@ -15,14 +22,24 @@ protsPvalCut <- 0.05
 fcCut   <- 1
 
 # ORA
-getIDsList <- function(DF,logicalRows,ID){
+getIDsList <- function(DF,logicalRows,ID, keep=c()){
   DF <- DF[logicalRows,ID]
   if (class(DF) == "character"){
     DF <- unique(DF) 
     print(paste(length(DF),"are significant"))
+    if (length(keep) != 0){
+      cat("Removed by back ",sum(!DF %in% keep))
+      DF <- DF[DF %in% keep]
+      print(paste(length(DF),"are remaining"))
+    }
   }else{
     DF <- DF[!duplicated(DF),]
     print(paste(nrow(DF),"are significant")) 
+    if (length(keep) != 0){
+      cat("Removed by back ",sum(!DF[,ID] %in% keep))
+      DF <- DF[DF[,ID] %in% keep,]
+      print(paste(nrow(DF)," are remaining")) 
+    }
   }
   return(DF)
 } 
@@ -35,11 +52,11 @@ SAdegsDwFC <- wholeDF$DEGs.log2FC.SA.YPD < -DEGFCCut
 SADEGsUpFC <- getIDsList(wholeDF,which(SAdegsQSig & SAdegsUpFC),DEGsIDs)
 SADEGsDwFC <- getIDsList(wholeDF,which(SAdegsQSig & SAdegsDwFC),DEGsIDs)
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORAseparatedUpnDw"
+outdir <- "FinalData/GeneLists/ORAseparatedUpnDw"
 saveTablesTsvExc(SADEGsUpFC,outdir)
 saveTablesTsvExc(SADEGsDwFC,outdir)
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORA"
+outdir <- "FinalData/GeneLists/ORA"
 SADEGs <- c(SADEGsUpFC,SADEGsDwFC)
 saveTablesTsvExc(SADEGs,outdir)
 
@@ -55,12 +72,12 @@ SAFAXdwNC <- wholeDF$FAXnetchangesSA < -fcCut
 
 SAFAXprotUpFC <- getIDsList(wholeDF, which(SAFAXprotQSig & SAFAXprotUpFC), ProtIDs)
 SAFAXprotDwFC <- getIDsList(wholeDF, which(SAFAXprotQSig & SAFAXprotDwFC), ProtIDs)
-SAFAXrbpmUpFC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXrbpmUpFC), ProtIDs)
-SAFAXrbpmDwFC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXrbpmDwFC), ProtIDs)
-SAFAXnetcupNC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXupNC), ProtIDs)
-SAFAXnetcdwNC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXdwNC), ProtIDs)
+SAFAXrbpmUpFC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXrbpmUpFC), ProtIDs, FAXacceptedProts)
+SAFAXrbpmDwFC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXrbpmDwFC), ProtIDs, FAXacceptedProts)
+SAFAXnetcupNC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXupNC), ProtIDs, FAXacceptedProts)
+SAFAXnetcdwNC <- getIDsList(wholeDF, which(SAFAXrbpmQsig & SAFAXdwNC), ProtIDs, FAXacceptedProts)
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORAseparatedUpnDw"
+outdir <- "FinalData/GeneLists/ORAseparatedUpnDw"
 saveTablesTsvExc(SAFAXprotUpFC,outdir)
 saveTablesTsvExc(SAFAXprotDwFC,outdir)
 saveTablesTsvExc(SAFAXrbpmUpFC,outdir)
@@ -68,7 +85,7 @@ saveTablesTsvExc(SAFAXrbpmDwFC,outdir)
 saveTablesTsvExc(SAFAXnetcupNC,outdir)
 saveTablesTsvExc(SAFAXnetcdwNC,outdir)
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORA"
+outdir <- "FinalData/GeneLists/ORA"
 SAFAXprot <- c(SAFAXprotUpFC,SAFAXprotDwFC)
 SAFAXrbpmFC <- c(SAFAXrbpmUpFC,SAFAXrbpmDwFC)
 SAFAXnetc <- c(SAFAXnetcupNC,SAFAXnetcdwNC)
@@ -88,12 +105,12 @@ SAUVXdwNC <- wholeDF$UVXnetchangesSA < -fcCut
 
 SAUVXprotUpFC <- getIDsList(wholeDF,which(SAUVXprotQSig & SAUVXprotUpFC),ProtIDs)
 SAUVXprotDwFC <- getIDsList(wholeDF,which(SAUVXprotQSig & SAUVXprotDwFC),ProtIDs)
-SAUVXrbpmUpFC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXrbpmUpFC),ProtIDs)
-SAUVXrbpmDwFC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXrbpmDwFC),ProtIDs)
-SAUVXnetcupNC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXupNC),ProtIDs)
-SAUVXnetcdwNC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXdwNC),ProtIDs)
+SAUVXrbpmUpFC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXrbpmUpFC),ProtIDs, UVXacceptedProts) # 1 change
+SAUVXrbpmDwFC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXrbpmDwFC),ProtIDs, UVXacceptedProts)
+SAUVXnetcupNC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXupNC),ProtIDs, UVXacceptedProts) # 1 change
+SAUVXnetcdwNC <- getIDsList(wholeDF,which(SAUVXrbpmQsig & SAUVXdwNC),ProtIDs, UVXacceptedProts)
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORAseparatedUpnDw"
+outdir <- "FinalData/GeneLists/ORAseparatedUpnDw"
 saveTablesTsvExc(SAUVXprotUpFC,outdir)
 saveTablesTsvExc(SAUVXprotDwFC,outdir)
 saveTablesTsvExc(SAUVXrbpmUpFC,outdir)
@@ -101,7 +118,7 @@ saveTablesTsvExc(SAUVXrbpmDwFC,outdir)
 saveTablesTsvExc(SAUVXnetcupNC,outdir)
 saveTablesTsvExc(SAUVXnetcdwNC,outdir)
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORA"
+outdir <- "FinalData/GeneLists/ORA"
 SAUVXprot <- c(SAUVXprotUpFC,SAUVXprotDwFC)
 SAUVXrbpm <- c(SAUVXrbpmUpFC,SAUVXrbpmDwFC)
 SAUVXnetc <- c(SAUVXnetcupNC,SAUVXnetcdwNC)
@@ -112,7 +129,7 @@ saveTablesTsvExc(SAUVXnetc,outdir)
 
 # GSEA 
 
-getGSEArankDF <- function(DF,dataype,crosslink,treatment,IDs,rankCol="log2"){
+getGSEArankDF <- function(DF,dataype,crosslink,treatment,IDs,rankCol="log2", keep=c()){
   rankcol <- colnames(DF)[grep(paste0(dataype,crosslink,"\\.",rankCol,".*",treatment,".*"),colnames(DF))]
   if (rankCol != "log2"){
     rankcol <- colnames(DF)[grep(paste0(crosslink,rankCol,treatment),colnames(DF))]
@@ -126,9 +143,14 @@ getGSEArankDF <- function(DF,dataype,crosslink,treatment,IDs,rankCol="log2"){
   DF <- DF[!duplicated(DF),]
   DF <- DF[complete.cases(DF),]
   print(paste(nrow(DF),"to GSEA"))
+  if (length(keep) != 0){
+    cat("Removed by back ",sum(!DF[,IDs] %in% keep))
+    DF <- DF[DF[,IDs] %in% keep,]
+    print(paste(nrow(DF)," are remaining")) 
+  }
   return(DF)
 } 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA"
+outdir <- "FinalData/GeneLists/GSEA"
 DF <- wholeDF
 
 dataype <- "DEGs"; crosslink <- ""; treatment <- "SA"
@@ -140,10 +162,10 @@ SAProteomeFAXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs)
 saveTablesTsvExc(SAProteomeFAXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
 dataype <- "RBPome"; crosslink <- "FAX"; treatment <- "SA"
-SARBPomeFAXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs)
+SARBPomeFAXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs,keep = FAXacceptedProts) # 2 change
 saveTablesTsvExc(SARBPomeFAXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
-SAnetchangesFAXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs,"netchanges")
+SAnetchangesFAXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs,"netchanges",FAXacceptedProts) # 2 change
 saveTablesTsvExc(SAnetchangesFAXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
 dataype <- "Proteome"; crosslink <- "UVX"; treatment <- "SA"
@@ -151,10 +173,10 @@ SAProteomeUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs)
 saveTablesTsvExc(SAProteomeUVXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
 dataype <- "RBPome"; crosslink <- "UVX"; treatment <- "SA"
-SARBPomeUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs)
+SARBPomeUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs,keep = UVXacceptedProts) # 9 change
 saveTablesTsvExc(SARBPomeUVXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
-SAnetchangesUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs,"netchanges")
+SAnetchangesUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs,"netchanges",UVXacceptedProts) # 9 change
 saveTablesTsvExc(SAnetchangesUVXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
 

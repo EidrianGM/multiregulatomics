@@ -5,14 +5,12 @@ setwd("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/")
 # library(limma)
 # library(ggplot2)
 # library(circlize)
-# library(paletteer)
 # library(PCAtools)
 # library("scatterplot3d")
 # library(RColorBrewer)
 # library(ggfortify)
-# library(openxlsx)
+library(openxlsx)
 # library(EnhancedVolcano)
-# library(scatterplot3d)
 # library(stringr)
 # library(gdata)
 # library(corrplot)
@@ -100,3 +98,4 @@ completeNdedup <- function(DF){
     return(unique(na.omit(DF)))
   }
 }
+

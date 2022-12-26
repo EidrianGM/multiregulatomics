@@ -191,7 +191,7 @@ basicAnalysis <- function(dataFile,ourPhenoData,outdir,tagname,mytreatment,mappi
   dir.create(outdir,F)
   
   expresionMatrix <- myDF[,grep("X[0-9]+",colnames(myDF))]
-
+  
   runnumbers <- gsub("X0+","",unlist(lapply(strsplit(colnames(expresionMatrix),"_"), function(x) return(x[[1]]))))
   expresionMatrix <- expresionMatrix[,colnames(expresionMatrix)[match(ourPhenoData$Run.number,runnumbers)]]
   runnumbers <- gsub("X0+","",unlist(lapply(strsplit(colnames(expresionMatrix),"_"), function(x) return(x[[1]]))))
@@ -210,7 +210,7 @@ basicAnalysis <- function(dataFile,ourPhenoData,outdir,tagname,mytreatment,mappi
   
   row.names(expresionMatrix) <- myDF$proteinName
   someVisualization(expresionMatrix,outdir,tagname,subPhenData)
-
+  
   ### PREPARE DATA 
   subPhenData[,conditionCol] <- as.factor(subPhenData[,conditionCol])
   phenoD <- AnnotatedDataFrame(data=subPhenData[,conditionCol,drop=FALSE])
@@ -260,7 +260,7 @@ getPlotsRawData <- function(inFile,tagname){
 }
 
 someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
-
+  
   if (class(subPhenData) == "logical"){
     expresionMatrix[2,] <- gsub("_.*","",expresionMatrix[2,])
     subPhenData <- as.data.frame(t(expresionMatrix[1:2,])); colnames(subPhenData) <- c("class","id"); rownames(subPhenData) <- subPhenData[,2]
@@ -278,9 +278,9 @@ someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
   toBoxPlot$Var2 <- factor(as.character(toBoxPlot$Var2),levels=unique(toBoxPlot$Var2))
   toBoxPlot$class <- subPhenData$class[match(toBoxPlot$Var2, as.character(as.numeric(subPhenData$id)))]
   myBox <- ggplot(toBoxPlot, aes(x=Var2, y=value, fill=class)) + geom_boxplot() +
-        scale_fill_manual(values = unique(allColors),aesthetics = "fill") +
-        theme_classic() + theme(legend.position="right",plot.title = element_text(size=11)) +
-        ggtitle(gsub("_"," ",tagname)) + xlab("")
+    scale_fill_manual(values = unique(allColors),aesthetics = "fill") +
+    theme_classic() + theme(legend.position="right",plot.title = element_text(size=11)) +
+    ggtitle(gsub("_"," ",tagname)) + xlab("")
   ggsave(file.path(outdir,paste0(tagname,'_BoxPlot.tiff')),myBox,device="tiff",units = "px",dpi=300)
   
   sum(SamplesMissingInGenes == ncol(expresionMatrix))
@@ -297,18 +297,18 @@ someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
     col_fun <- colorRamp2(c(min(toHMP,na.rm = T),0,max(toHMP,na.rm = T)), c("blue","white","red"))
     tiff(file.path(outdir,paste0(tagname,'_NAs_HeatMap.tiff')), ncol(toHMP) * 120, 1500, pointsize=5, res = 300)
     print(
-    Heatmap(toHMP, cluster_columns=F, cluster_rows=F, col=col_fun,
-            top_annotation=column_ha, right_annotation=row_ha,
-            show_row_names=F, show_row_dend=F, na_col="grey",name = paste0(tagname,'_NAs'),
-            show_heatmap_legend=F,  column_title_gp=gpar(fontsize = 6),
-            column_names_gp = gpar(fontsize = 6),
-            row_names_gp = gpar(fontsize = 6))
-            #, width = ncol(toHMP)*unit(10, "mm")
-            #, height = nrow(toHMAP)*unit(5, "mm")) 
+      Heatmap(toHMP, cluster_columns=F, cluster_rows=F, col=col_fun,
+              top_annotation=column_ha, right_annotation=row_ha,
+              show_row_names=F, show_row_dend=F, na_col="grey",name = paste0(tagname,'_NAs'),
+              show_heatmap_legend=F,  column_title_gp=gpar(fontsize = 6),
+              column_names_gp = gpar(fontsize = 6),
+              row_names_gp = gpar(fontsize = 6))
+      #, width = ncol(toHMP)*unit(10, "mm")
+      #, height = nrow(toHMAP)*unit(5, "mm")) 
     )
     dev.off()
   }
-
+  
   expresionMatrix <- na.omit(expresionMatrix)
   
   pcares <- prcomp(t(expresionMatrix))
@@ -346,9 +346,9 @@ someVisualization <- function(expresionMatrix,outdir,tagname,subPhenData=NA){
   col_fun <- colorRamp2(c(min(toHMP,na.rm = T),0,max(toHMP,na.rm = T)), c("blue","white","red"))
   tiff(file.path(outdir,paste0(tagname,'_CorrPlot.tiff')), ncol(toHMP) * 80, ncol(toHMP) * 80, pointsize=10, res = 300)
   corrplot(corMat, method = 'circle', type = 'upper', order = 'original', tl.cex=1, title=tagname,
-            tl.col = allColors,tl.srt = 45,cl.ratio = 0.2, number.cex = 0.6,
-            mar = c(5, 1, 2, 1),tl.pos = 'lt',addCoef.col = "grey",
-            col=rev(COL2('RdBu', 200)))
+           tl.col = allColors,tl.srt = 45,cl.ratio = 0.2, number.cex = 0.6,
+           mar = c(5, 1, 2, 1),tl.pos = 'lt',addCoef.col = "grey",
+           col=rev(COL2('RdBu', 200)))
   print(legend("bottom", legend=classes,fill=colors, horiz=T, cex=0.5,y = 0, bty = "n"))
   dev.off()
 }
@@ -389,7 +389,7 @@ getPlotsOfConditions <- function(DF,outdir,tagname,pvalcutoff,FCcutoff){
   for (enrichFile in enrichFiles){
     createHMtop10GSEA(enrichFile)
   }
- 
+  
 }
 
 

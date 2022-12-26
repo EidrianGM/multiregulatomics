@@ -32,10 +32,10 @@ doGC4ORA <- function(dirWithGeneLists,orthologs=TRUE){
   }
 }
 
-dirWithGeneLists <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORA"
+dirWithGeneLists <- "FinalData/GeneLists/ORA"
 doGC4ORA(dirWithGeneLists,orthologs=TRUE)
 
-dirWithGeneLists <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/ORAseparatedUpnDw"
+dirWithGeneLists <- "FinalData/GeneLists/ORAseparatedUpnDw"
 doGC4ORA(dirWithGeneLists,orthologs=TRUE)
 
 ################################################################################
@@ -47,7 +47,7 @@ doGC4ORA(dirWithGeneLists,orthologs=TRUE)
 annotsInfo <- read.delim("/home/eidriangm/Desktop/annotation_info_table.tsv")
 
 # Download manually annotation files from GeneCodis 4
-annotationsFilesFolder <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/databases/uniprotGC4"
+annotationsFilesFolder <- "data/databases/uniprotGC4"
 annotFiles <- list.files(annotationsFilesFolder,pattern = "*.tsv",full.names = T)
 allDBs <- c()
 for (annotFile in annotFiles){
@@ -77,8 +77,12 @@ for (db in unique(allDBs$db)){
 library(tidyr)
 library(fgsea)
 
+
+dirname("a/b/c/asda.txt")
+
 doGSEAs <- function(GSEAFile,gseaDB,minGeneset,maxGeneset, orthologs=T) {
   outfile <- gsub("GeneLists","EnrichmentResults",GSEAFile)
+  dir.create(dirname(outfile),showWarnings = F)
   if (file.exists(outfile)){
     cat("Done")
     return()
@@ -111,20 +115,23 @@ doGSEAs <- function(GSEAFile,gseaDB,minGeneset,maxGeneset, orthologs=T) {
   return(allGSEAres)
 }
 
-SAdegsGSEAFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
-SAProteomeFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAProteomeFAXgsea.tsv"
-SARBPomeFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SARBPomeFAXgsea.tsv"
-SAnetchangesFAXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAnetchangesFAXgsea.tsv"
-SAdegsGSEAFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
-SAProteomeUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAProteomeUVXgsea.tsv"
-SARBPomeUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SARBPomeUVXgsea.tsv"
-SAnetchangesUVXgseaFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/GeneLists/GSEA/SAnetchangesUVXgsea.tsv"
+SAdegsGSEAFile <- "FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
+SAProteomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeFAXgsea.tsv"
+SARBPomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeFAXgsea.tsv"
+SAnetchangesFAXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesFAXgsea.tsv"
+SAdegsGSEAFile <- "FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
+SAProteomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeUVXgsea.tsv"
+SARBPomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeUVXgsea.tsv"
+SAnetchangesUVXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesUVXgsea.tsv"
 
 SAdegsGSEA <- doGSEAs(SAdegsGSEAFile,gseaDB,minGeneset,maxGeneset)
 SAProteomeFAXgsea <- doGSEAs(SAProteomeFAXgseaFile,gseaDB,minGeneset,maxGeneset)
+
 SARBPomeFAXgsea <- doGSEAs(SARBPomeFAXgseaFile,gseaDB,minGeneset,maxGeneset)
 SAnetchangesFAXgsea <- doGSEAs(SAnetchangesFAXgseaFile,gseaDB,minGeneset,maxGeneset)
+
 SAdegsGSEA <- doGSEAs(SAdegsGSEAFile,gseaDB,minGeneset,maxGeneset)
 SAProteomeUVXgsea <- doGSEAs(SAProteomeUVXgseaFile,gseaDB,minGeneset,maxGeneset)
+
 SARBPomeUVXgsea <- doGSEAs(SARBPomeUVXgseaFile,gseaDB,minGeneset,maxGeneset)
 SAnetchangesUVXgsea <- doGSEAs(SAnetchangesUVXgseaFile,gseaDB,minGeneset,maxGeneset)

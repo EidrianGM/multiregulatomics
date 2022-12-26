@@ -1,21 +1,10 @@
-## Normalize Legend for NES and Rel .Enr
-
 library(dplyr)
 library(reshape2)
 library(ggplot2)
-
-#treatments <- c("SA","DTT","H2O2")
-#crosslinks <- c("FAX","UVX")
-
-GSEAfilesDir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/EnrichmentResults/GSEA"
-treatment <- "SA"; crosslink <- "UVX"
-GSEAfiles <- list.files(GSEAfilesDir,pattern = paste0(treatment,".*(degs|",crosslink,").*.tsv"),full.names = T)
-getGSEApLots(GSEAfiles)
-
-treatment <- "SA"; crosslink <- "FAX"
-GSEAfiles <- list.files(GSEAfilesDir,pattern = paste0(treatment,".*(degs|",crosslink,").*.tsv"),full.names = T)
-getGSEApLots(GSEAfiles)
-
+library(stringr)
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+swr = function(string, nwrap=50) {paste(strwrap(string, width=nwrap), collapse="\n")}; swr = Vectorize(swr)
+source("FinalScripts/functionOmics.R")
 
 getGSEApLots <- function(GSEAfiles){
   allGSEAresults <- c()
@@ -86,7 +75,7 @@ getGSEApLots <- function(GSEAfiles){
   #absNESscale <- round(c(min(masterEAdf$absNES),max(masterEAdf$absNES)/2,max(masterEAdf$absNES)),2)
   #scale_size_manual(values = absNESscale, breaks = absNESscale, labels=absNESscale), name = '|NES|') +
   #scale_size(name = '|NES|') +
-    
+  
   myplot <- ggplot(masterEAdf, aes(x = datatype, y = pathway, alpha = padj, size = absNES, colour = NES)) + 
     geom_point() +
     scale_size(name = '|NES|') +
@@ -166,7 +155,7 @@ getGSEApLots <- function(GSEAfiles){
     
     masterEAdf2plot_clusterGenes$clusterGenes <- swr(masterEAdf2plot_clusterGenes$clusterGenes,50)
     masterEAdf2plot_clusterGenes$datatype <- factor(masterEAdf2plot_clusterGenes$datatype,levels = datatypeOrder)
-      
+    
     myplot <- ggplot(masterEAdf2plot_clusterGenes, aes(x = datatype, y = pathway, alpha = padj, size = absNES, colour = NES)) + 
       geom_point() +
       scale_size(name = '|NES|') +
@@ -184,6 +173,18 @@ getGSEApLots <- function(GSEAfiles){
            width = 4000, height = length(unique(masterEAdf2plot_clusterGenes$pathway)) * 40, units = 'px')
   }
 }  
-  
-  
+
+
+#treatments <- c("SA","DTT","H2O2")
+#crosslinks <- c("FAX","UVX")
+
+GSEAfilesDir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/EnrichmentResults/GSEA"
+treatment <- "SA"; crosslink <- "UVX"
+GSEAfiles <- list.files(GSEAfilesDir,pattern = paste0(treatment,".*(degs|",crosslink,").*.tsv"),full.names = T)
+getGSEApLots(GSEAfiles)
+
+treatment <- "SA"; crosslink <- "FAX"
+GSEAfiles <- list.files(GSEAfilesDir,pattern = paste0(treatment,".*(degs|",crosslink,").*.tsv"),full.names = T)
+getGSEApLots(GSEAfiles)
+
 

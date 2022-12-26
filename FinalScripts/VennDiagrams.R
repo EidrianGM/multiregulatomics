@@ -18,25 +18,50 @@ ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) +
 nameOut <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/vennUVXRBPomeOldvsNew.png"
 ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
 
+##########
 
-commonProts <- intersect(RBPomeUVXOldProts,RBPomeUVXAdriProts)
-RBPomeUVXOldProtsFCs <- RBPomeUVXOldDF$log2ratio_PolyARNAUVwithSA[RBPomeUVXOldDF$proteinName %in% commonProts]
-RBPomeUVXAdriProtsFCs <- RBPomeUVXAdriDF$log2ratio_PolyARNAUVwithSA[RBPomeUVXAdriDF$proteinName %in% commonProts]
+backgroundRBPomeFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/BackgroundRemoval/sqaProteinMean.tsv"
+backgroundRBPomeDF <- read.delim(backgroundRBPomeFile)
+
+# UniprotsCoded <- c()
+# for (badFormatedProtName in row.names(backgroundRBPomeDF)){
+#   badFormatedProtNameSep <- unlist(strsplit(badFormatedProtName,split = "\\|"))
+#   badFormatedProtNameStr <- paste(badFormatedProtNameSep[seq(2,length(badFormatedProtNameSep),2)],collapse = ";")
+#   UniprotsCoded <- c(UniprotsCoded,badFormatedProtNameStr)
+# }
+
+FCcutOff <- 1
+abovebackgrProtsFAX <- row.names(backgroundRBPomeDF)[which(abs(backgroundRBPomeDF$Condition2) > FCcutOff)]
+abovebackgrProtsUVX <- row.names(backgroundRBPomeDF)[which(abs(backgroundRBPomeDF$Condition3) > FCcutOff)]
+abovebackgrProtsFAXCorrected <- UniprotsCoded[which(abs(backgroundRBPomeDF$Condition2) > FCcutOff)]
+abovebackgrProtsUVXCorrected <- UniprotsCoded[which(abs(backgroundRBPomeDF$Condition3) > FCcutOff)]
+
+toVennList <- list(allProteins = UniprotsCoded, FAXacceptedBG = abovebackgrProtsFAXCorrected, UVCacceptedBG=abovebackgrProtsUVXCorrected)
+ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/BackgroundRemoval/backgroundStatus.tiff"
+ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
 
 
-myDataDF <- data.frame(oldFCs=RBPomeUVXOldProtsFCs,newFCs=RBPomeUVXAdriProtsFCs)
-corScatterSA <- ggplot(data = myDataDF, mapping = aes(x = oldFCs, y = newFCs)) +
-  geom_point(shape = 21, fill = '#0f993d', color = 'white', size = 3) +
-  geom_smooth(method = "lm",se = F)+
-  annotate("text", x = -1, y = 4, col = "black", size = 3,
-           label = paste("Pearson r = ", signif(cor(RBPomeUVXOldProtsFCs,RBPomeUVXAdriProtsFCs,method = "pearson"),3))) +
-  annotate("text", x = 2.5, y = -2,  col = "red", size = 3,
-           label = paste("y = ", signif(coef(lm(RBPomeUVXAdriProtsFCs ~ RBPomeUVXOldProtsFCs))[1],3), 
-                         signif(coef(lm(RBPomeUVXAdriProtsFCs ~ RBPomeUVXOldProtsFCs))[2],2), "x"))
-nameOut <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/corrScaterUVXRBPomeOldvsNew.png"
-ggsave(filename = nameOut, plot = corScatterSA, width = 30, height = 15, units = 'cm', dpi = 'print')
+overlapORFs <- read.xlsx("/home/eidriangm/Downloads/overlap analysis.xlsx")
+
+backgroundORFs <- read.delim("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/BackgroundRemoval/backgroundHMAP.tsv")
+
+backgroundORFsMapped <-  merge(yeastGenesProtMap,backgroundORFs,by.x = "UniprotACC", by.y = "row.names",all.y = T)
+backgroundORFsMapped <- backgroundORFsMapped[,c("UniprotACC","ORF")]
+backgroundORFsMapped$ORF[is.na(backgroundORFsMapped$ORF)] <- backgroundORFsMapped$UniprotACC[is.na(backgroundORFsMapped$ORF)]
+backgroundORFsMapped <- backgroundORFsMapped[!duplicated(backgroundORFsMapped),]
+
+sum(grepl(";", backgroundORFsMapped$UniprotACC))
+
+toVennList <- list(Dataset.1 = overlapORFs$Dataset.1, Dataset.2 = overlapORFs$Dataset.2, Background=backgroundORFsMapped$ORF)
+ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/BackgroundRemoval/ORFsBackgroundStatus.tiff"
+ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
 
 
-commonProts
 
 
