@@ -1,4 +1,7 @@
 library(openxlsx)
+library(ggVennDiagram)
+library(ggplot2)
+
 mappingFinalFile <- "yeastReference/mappingFile.xlsx"
 yeastGenesProtMap <- read.xlsx(mappingFinalFile)
 yeastGenesProtMap <- yeastGenesProtMap[!duplicated(yeastGenesProtMap),]
@@ -7,61 +10,60 @@ yeastGenesProtMap <- yeastGenesProtMap[!duplicated(yeastGenesProtMap),]
 ##### MAPPING DEGs #####
 ########################
 
-DEGsFile <- "data/RNA-Seq data/result/DE gene testing statistics.csv"
-DEGsDF <- read.delim(DEGsFile, sep = ",") 
-
-TPMsFile <- "data/RNA-Seq data/result/TPM_genes.csv"
-TPMsDF <- read.delim(TPMsFile, sep = ",") 
-
+DEGsFile <- "data/RNA-Seq data/correction/RNAseqRepaired.tsv"
+DEGsDF <- read.delim(DEGsFile) 
 DEGsDF <- reshape(DEGsDF, direction = "wide", idvar = "target", timevar = "contrast")
 
+TPMsFile <- "data/RNA-Seq data/result/counts_trans.csv"
+TPMsDF <- read.delim(TPMsFile, sep = ",") 
+colnames(TPMsDF)[2:ncol(TPMsDF)] <- paste0(colnames(TPMsDF)[2:ncol(TPMsDF)],".rawCounts")
+TPMsDF$X <- gsub("_.*","",TPMsDF$X)
+
 DEGsDFfull <- merge(TPMsDF,DEGsDF,by.x="X",by.y="target")
-colnames(DEGsDFfull)[1] <- "target"
+DEGsDFfull$target <- DEGsDFfull$X
 
-DEGsDFMaped <- merge(DEGsDFfull,yeastGenesProtMap,by.x="target",by.y="ORFgene")
-DEGsDFMaped$ORFgene <- DEGsDFMaped$target
-any(duplicated(DEGsDFMaped))
-DEGsDFMaped <- DEGsDFMaped[!duplicated(DEGsDFMaped),]
-DEGsNotMapped <- DEGsDFfull[!(DEGsDFfull$target %in% DEGsDFMaped$target),]
+colnames(DEGsDFfull) <- paste0("DEGs.",colnames(DEGsDFfull))
 
-DEGsNotMapped$target <- gsub("_.*","",toupper(DEGsNotMapped$target))
-DEGsDFMaped2 <- merge(DEGsNotMapped,yeastGenesProtMap,by.x="target",by.y="ORFgene")
-DEGsDFMaped2$ORFgene <- DEGsDFMaped2$target
-any(duplicated(DEGsDFMaped2))
-DEGsDFMaped2 <- DEGsDFMaped2[!duplicated(DEGsDFMaped2),]
-DEGsNotMapped2 <- DEGsNotMapped[!(DEGsNotMapped$target %in% DEGsDFMaped2$target),]
+whatwehaveMapping <- merge(DEGsDFfull,yeastGenesProtMap,by.x = "DEGs.target",by.y = "ORF")
+whatwehaveMapping$ORF <- whatwehaveMapping$DEGs.target
+whatwehaveNOTMapping <- DEGsDFfull[!DEGsDFfull$DEGs.target %in% yeastGenesProtMap$ORF,]
 
-DEGsDFMaped3 <- merge(DEGsNotMapped2,yeastGenesProtMap,by.x="target",by.y="GeneName")
-any(duplicated(DEGsDFMaped3))
-DEGsDFMaped3$GeneName <- DEGsDFMaped3$target
-DEGsDFMaped3 <- DEGsDFMaped3[!duplicated(DEGsDFMaped3),]
-DEGsNotMapped3 <- DEGsNotMapped2[!(DEGsNotMapped2$target %in% DEGsDFMaped3$target),]
-nrow(DEGsNotMapped3)
-DEGsDFMaped4 <- cbind(DEGsNotMapped3,yeastGenesProtMap[grepl(paste(DEGsNotMapped3$target,collapse = '|'),yeastGenesProtMap$Alias),])
-DEGsNotMapped4 <- DEGsNotMapped3[!(DEGsNotMapped3$target %in% DEGsDFMaped4$target),]
-nrow(DEGsNotMapped4)
+whatwehaveMapping2 <- merge(whatwehaveNOTMapping,yeastGenesProtMap,by.x = "DEGs.target",by.y = "Alias")
+whatwehaveMapping2$Alias <- whatwehaveMapping2$DEGs.target
 
-DEGsDFMapedFull <- rbind(DEGsDFMaped,DEGsDFMaped2,DEGsDFMaped3,DEGsDFMaped4)
-any(duplicated(DEGsDFMapedFull))
-colnames(DEGsDFMapedFull)
+whatwehaveNOTMapping2 <- whatwehaveNOTMapping[!whatwehaveNOTMapping$DEGs.target %in% yeastGenesProtMap$Alias,]
 
-colnames(DEGsDFMapedFull)[colnames(DEGsDFMapedFull) %in% colnames(yeastGenesProtMap)]
-colnames(DEGsDFMapedFull)[!colnames(DEGsDFMapedFull) %in% colnames(yeastGenesProtMap)] <- paste0("DEGs.",colnames(DEGsDFMapedFull)[!colnames(DEGsDFMapedFull) %in% colnames(yeastGenesProtMap)])
+whatwehaveMapping3 <- merge(whatwehaveNOTMapping2,yeastGenesProtMap,by.x = "DEGs.target",by.y = "GeneName")
+whatwehaveMapping3$GeneName <- whatwehaveMapping3$DEGs.target
+whatwehaveNOTMapping3 <- whatwehaveNOTMapping2[!whatwehaveNOTMapping2$DEGs.target %in% yeastGenesProtMap$GeneName,]
 
-DEGsDFMapedFull <- DEGsDFMapedFull[,c(colnames(DEGsDFMapedFull)[colnames(DEGsDFMapedFull) %in% colnames(yeastGenesProtMap)], colnames(DEGsDFMapedFull)[!colnames(DEGsDFMapedFull) %in% colnames(yeastGenesProtMap)])]
+theAliases <- sapply(whatwehaveNOTMapping3$DEGs.target, function(x) {grep(paste0("\\b",x,"\\b"),yeastGenesProtMap$Alias,ignore.case = F)},simplify = "array")
+mappedByAlias <- as.data.frame(cbind(DEGs.target=names(unlist(theAliases)),Alias=yeastGenesProtMap$Alias[unlist(theAliases)]))
+whatwehaveMapping4 <- merge(mappedByAlias,yeastGenesProtMap,by = "Alias")
+whatwehaveNOTMapping4 <- names(theAliases)[!names(theAliases) %in% names(unlist(theAliases))]
 
-DEGsDFMapedFullFile <- '/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/DEGsFullMapping.tsv'
-write.table(DEGsDFMapedFull,DEGsDFMapedFullFile,quote = F,sep = '\t',col.names = T,row.names = F)
+theAliases2 <- sapply(whatwehaveNOTMapping4, function(x) {grep(x,yeastGenesProtMap$Alias,ignore.case = F,fixed = T)},simplify = "array")
+mappedByAlias2 <- as.data.frame(cbind(DEGs.target=names(unlist(theAliases2)),Alias=yeastGenesProtMap$Alias[unlist(theAliases2)]))
+whatwehaveMapping5 <- merge(mappedByAlias2,yeastGenesProtMap,by = "Alias")
+whatwehaveNOTMapping5 <- names(theAliases2)[!names(theAliases2) %in% names(unlist(theAliases2))]
+length(whatwehaveNOTMapping5)
 
+whatwehaveMapping4n5 <- merge(whatwehaveNOTMapping3,rbind(whatwehaveMapping4,whatwehaveMapping5),by = "DEGs.target") 
+
+DEGsMapped <- rbind(whatwehaveMapping,whatwehaveMapping2,whatwehaveMapping3,whatwehaveMapping4n5)
+table(DEGsMapped$type)
+DEGsMapped$DEGs.X <- NULL
+DEGsMappedFile <- 'FinalData/DEGsMapped.tsv'
+write.table(DEGsMapped,DEGsMappedFile,quote = F,sep = '\t',col.names = T,row.names = F)
 
 ################################################################################
 ########################## Merging Proteomes and RBPomes #######################
 ################################################################################
 
-ProteomeFAXfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/correctedRAW/ProteomeFAX_np2_norm_gmin_no15-25-26-36-39/ProteomeFAX_np2_norm_gmin_no15-25-26-36-39_PROTEIN.tsv"
-ProteomeUVXfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/correctedRAW/ProteomeUVX_np2_norm_gmin_no4-6-23-31-32/ProteomeUVX_np2_norm_gmin_no4-6-23-31-32_PROTEIN.tsv"
-RBPomeFAXfile <-  "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/correctedRAW/RBPomeFAX_np2_norm_gmin_no12/RBPomeFAX_np2_norm_gmin_no12_PROTEIN.tsv"
-RBPomeUVXfile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/correctedRAW/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
+ProteomeFAXfile <- "FinalData/Raw/correctedRAW/ProteomeFAX_np2_norm_gmin_no15-25-26-36-39/ProteomeFAX_np2_norm_gmin_no15-25-26-36-39_PROTEIN.tsv"
+ProteomeUVXfile <- "FinalData/Raw/correctedRAW/ProteomeUVX_np2_norm_gmin_no4-6-23-31-32/ProteomeUVX_np2_norm_gmin_no4-6-23-31-32_PROTEIN.tsv"
+RBPomeFAXfile <-  "FinalData/Raw/correctedRAW/RBPomeFAX_np2_norm_gmin_no12/RBPomeFAX_np2_norm_gmin_no12_PROTEIN.tsv"
+RBPomeUVXfile <- "FinalData/Raw/correctedRAW/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
 
 ProteomeFAX <- read.delim(ProteomeFAXfile); nrow(ProteomeFAX)
 ProteomeUVX <- read.delim(ProteomeUVXfile); nrow(ProteomeUVX)
@@ -110,7 +112,7 @@ UVXdf$UVXnetchangesDTT <- UVXdf$RBPomeUVX.log2ratio_PolyARNAUVwithDTT - UVXdf$Pr
 UVXdf$UVXnetchangesH2O2 <- UVXdf$RBPomeUVX.log2ratio_PolyARNAUVwithH202 - UVXdf$ProteomeUVX.log2ratio_Condition3
 UVXdf$UVXnetchangesSA <- UVXdf$RBPomeUVX.log2ratio_PolyARNAUVwithSA - UVXdf$ProteomeUVX.log2ratio_Condition4
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData"
+outdir <- "FinalData"
 saveTablesTsvExc(FAXdf,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 saveTablesTsvExc(UVXdf,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
@@ -123,18 +125,16 @@ FAXnUVXdf <- merge(FAXdf,UVXdf,all = T, by = "proteinName"); nrow(FAXdf); nrow(F
 toVennList <- list(FAX = FAXdf$proteinName, UVX = UVXdf$proteinName)
 ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData"
+outdir <- "FinalData"
 saveTablesTsvExc(FAXnUVXdf,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 ################################################################################
 ########################## MAPPING FAX and UVX #################################
 ################################################################################
 
-# 1 UVX
-FAXnUVXFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/FAXnUVXdf.tsv"
+FAXnUVXFile <- "FinalData/FAXnUVXdf.tsv"
 FAXnUVXdf <- read.delim(FAXnUVXFile)
 
-FAXnUVXOrthologs <- FAXnUVXdf[grepl(";",FAXnUVXdf$proteinName),]; nrow(FAXnUVXOrthologs)
 FAXnUVXSingProts <- FAXnUVXdf[!grepl(";",FAXnUVXdf$proteinName),]; nrow(FAXnUVXSingProts)
 
 toVennList <- list(mapping = yeastGenesProtMap$UniprotACC, FAXnUVX = FAXnUVXSingProts$proteinName)
@@ -144,8 +144,8 @@ FAXnUVXmapped <- merge(yeastGenesProtMap,FAXnUVXSingProts,by.x = "UniprotACC", b
 FAXnUVXmapped$proteinName <- FAXnUVXmapped$UniprotACC
 nrow(FAXnUVXSingProts); nrow(FAXnUVXmapped)
 
-FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)] 
-View(FAXnUVXmapped[FAXnUVXmapped$UniprotACC %in% FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)],])
+# FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)] 
+# View(FAXnUVXmapped[FAXnUVXmapped$UniprotACC %in% FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)],])
 # These proteins are located in two different chromosomes of Yeast and are behind a duplicity
 
 FAXnUVXunmapped <- FAXnUVXSingProts[!(FAXnUVXSingProts$proteinName %in% yeastGenesProtMap$UniprotACC),]
@@ -159,54 +159,122 @@ FAXnUVXmapped2$geneName.ProteomeFAX <- FAXnUVXmapped2$GeneName
 FAXnUVXunmapped <- FAXnUVXunmapped[!(FAXnUVXunmapped$geneName.ProteomeFAX %in% yeastGenesProtMap$GeneName),]
 nrow(FAXnUVXunmapped)
 
-FAXnUVXfullMapped <- rbind.fill(FAXnUVXmapped,FAXnUVXmapped2,FAXnUVXOrthologs)
+# FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)] 
+# View(FAXnUVXmapped[FAXnUVXmapped$UniprotACC %in% FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)],])
+# These proteins are located in two different chromosomes of Yeast and are behind a duplicity
+
+library(tidyr)
+
+FAXnUVXOrthologs <- FAXnUVXdf[grepl(";",FAXnUVXdf$proteinName),]; nrow(FAXnUVXOrthologs)
+FAXnUVXOrthologs$orthologsIDs <- 1:nrow(FAXnUVXOrthologs)
+
+sepFAXnUVXOrthologs <- separate_rows(FAXnUVXOrthologs, proteinName, sep = ";", convert = FALSE)
+nrow(FAXnUVXOrthologs); nrow(sepFAXnUVXOrthologs)
+
+toVennList <- list(mapping = yeastGenesProtMap$UniprotACC, FAXnUVX = sepFAXnUVXOrthologs$proteinName)
+ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
+
+sepFAXnUVXOrthologsMapped <- merge(yeastGenesProtMap,sepFAXnUVXOrthologs,by.x = "UniprotACC", by.y = "proteinName")
+sepFAXnUVXOrthologsMapped$proteinName <- sepFAXnUVXOrthologsMapped$UniprotACC
+nrow(sepFAXnUVXOrthologs); nrow(sepFAXnUVXOrthologsMapped)
+sepFAXnUVXOrthologsUnmapped <- sepFAXnUVXOrthologs[!(sepFAXnUVXOrthologs$proteinName %in% yeastGenesProtMap$UniprotACC),]
+
+sepFAXnUVXOrthologsUnmapped$proteinName <- gsub("-2","",sepFAXnUVXOrthologsUnmapped$proteinName)
+sepFAXnUVXOrthologsMapped2 <- merge(yeastGenesProtMap,sepFAXnUVXOrthologsUnmapped,by.x = "UniprotACC", by.y = "proteinName")
+
+sepFAXnUVXOrthologsUnmapped <- sepFAXnUVXOrthologsMapped2[!(sepFAXnUVXOrthologsMapped2$proteinName %in% yeastGenesProtMap$UniprotACC),]
+nrow(sepFAXnUVXOrthologsUnmapped)
+
+sepFAXnUVXOrthologsMapped2$UniprotACC <- paste0(sepFAXnUVXOrthologsMapped2$UniprotACC,"-2")
+sepFAXnUVXOrthologsMapped2$proteinName <- sepFAXnUVXOrthologsMapped2$UniprotACC
+
+orthologsMapped <- rbind(sepFAXnUVXOrthologsMapped,sepFAXnUVXOrthologsMapped2)
+nrow(orthologsMapped)
+orthologsMapped <- orthologsMapped[!duplicated(orthologsMapped),]
+nrow(orthologsMapped)
+
+orthologsMappedMinInfo <- orthologsMapped[c("orthologsIDs", "proteinName", colnames(yeastGenesProtMap))]
+nrow(orthologsMappedMinInfo); #View(orthologsMappedMinInfo)
+
+require(dplyr)
+
+
+orthologsMappedMinInfo[is.na(orthologsMappedMinInfo)] <- ""
+orthologsCollapsed <- summarise_each(group_by(orthologsMappedMinInfo,orthologsIDs),funs(paste(., collapse = ";")))
+orthologsCollapsed <- orthologsCollapsed[order(orthologsCollapsed$orthologsIDs,decreasing = F),]
+nrow(orthologsCollapsed); #View(FAXnUVXOrthologs)
+
+orthologsFullMap <- merge(orthologsCollapsed,FAXnUVXOrthologs,by="orthologsIDs")
+orthologsFullMap$proteinName.x <- NULL 
+orthologsFullMap$orthologsIDs <- NULL
+colnames(orthologsFullMap)[17] <- gsub("\\.y","",colnames(orthologsFullMap)[17])
+
+View(orthologsFullMap)
+
+
+FAXnUVXfullMapped <- rbind(FAXnUVXmapped,FAXnUVXmapped2,orthologsFullMap)
 FAXnUVXfullMapped <- FAXnUVXfullMapped[,c(colnames(yeastGenesProtMap), colnames(FAXnUVXfullMapped)[!(colnames(FAXnUVXfullMapped) %in% colnames(yeastGenesProtMap))])]
 
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData"
+outdir <- "FinalData"
 saveTablesTsvExc(FAXnUVXfullMapped,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 ################################################################################
 ###################### MERGIN Transcriptome and FAXnUVX ########################
 ################################################################################
 
-toVennList <- list(DEGs = DEGsDFMapedFull$UniprotACC, FAXnUVX = FAXnUVXfullMapped$UniprotACC)
-ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
-allDataDF <- merge(DEGsDFMapedFull,FAXnUVXfullMapped,by = "UniprotACC",all = T)
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData"
-saveTablesTsvExc(allDataDF,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+FAXnUVXfullMapped <- read.delim("FinalData/FAXnUVXfullMapped.tsv",quote = "")
+intersect(colnames(DEGsMapped),colnames(FAXnUVXfullMapped))
 
-checkingMerging <- cbind(allDataDF$proteinName[!is.na(allDataDF$proteinName)],allDataDF$UniprotACC[!is.na(allDataDF$proteinName)])
-checkingMerging <- checkingMerging[complete.cases(checkingMerging),]
-if (identical(checkingMerging[,1],checkingMerging[,2])){
-  print("Merge correct")
+FAXnUVXfullMap <- FAXnUVXfullMapped[!grepl(";",FAXnUVXfullMapped$proteinName),]; nrow(FAXnUVXfullMap)
+FAXnUVXfullMapOrtho <- FAXnUVXfullMapped[grepl(";",FAXnUVXfullMapped$proteinName),]; nrow(FAXnUVXfullMapOrtho)
+
+toVennList <- list(DEGs = DEGsMapped$UniprotACC, FAXnUVX = FAXnUVXfullMap$UniprotACC)
+ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
+
+toVennList <- list(DEGs = DEGsMapped$ORF, FAXnUVX = FAXnUVXfullMap$ORF)
+ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
+
+DEGsnFAXnUVX <- merge(DEGsMapped,FAXnUVXfullMap,by="ORF",all = T)
+checkMerge <- as.data.frame(cbind(DEGsnFAXnUVX$Gene.Names.x,DEGsnFAXnUVX$Gene.Names.y))
+checkMerge <- checkMerge[complete.cases(checkMerge),]
+if (!identical(checkMerge$V1,checkMerge$V2)){
+  View(as.data.frame(cbind(checkMerge$V1,checkMerge$V2))[checkMerge$V1!=checkMerge$V2,])
 }
+
+for (xCol in colnames(DEGsnFAXnUVX)[grep("\\.x",colnames(DEGsnFAXnUVX))]){
+  yCol <- gsub("\\.x",".y",xCol)
+  DEGsnFAXnUVX[,xCol] <- coalesce(DEGsnFAXnUVX[,xCol],DEGsnFAXnUVX[,yCol])
+  DEGsnFAXnUVX[,yCol] <- NULL
+}
+colnames(DEGsnFAXnUVX) <- gsub("\\.x","",colnames(DEGsnFAXnUVX))
+
+allDataDF <- rbind.fill(DEGsnFAXnUVX,FAXnUVXfullMapOrtho)
+
+outdir <- "FinalData"
+saveTablesTsvExc(allDataDF,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 ### FINAL TABLES FOR IBTISSAM
 
 FAXacceptedProts <- read.delim("FinalData/BackgroundRemoval/FAXAccBackGrAcceptedFC3.tsv",header = F)[,1]
 UVXacceptedProts <- read.delim("FinalData/BackgroundRemoval/UVXAccBackGrAcceptedFC3.tsv",header = F)[,1]
 
-FAXwoBKGR <- wholeDF[which((!is.na(wholeDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA)) & wholeDF$proteinName %in% FAXacceptedProts),]
+FAXwoBKGR <- allDataDF[which((!is.na(allDataDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA)) & allDataDF$proteinName %in% FAXacceptedProts),]
 length(FAXwoBKGR$proteinName); length(unique(FAXwoBKGR$proteinName))
 
 # The proteins P10081 P02309 P32324 P02994 are located in two different chromosomal position this means an extra 4 rows due to mapping
 FAXwoBKGR$proteinName[duplicated(FAXwoBKGR$proteinName)]
+View(FAXwoBKGR[FAXwoBKGR$proteinName %in% FAXwoBKGR$proteinName[duplicated(FAXwoBKGR$proteinName)],])
 
-View(
-  FAXwoBKGR[FAXwoBKGR$proteinName %in% FAXwoBKGR$proteinName[duplicated(FAXwoBKGR$proteinName)],]
-)
-UVXwoBKGR <- wholeDF[which((!is.na(wholeDF$RBPomeUVX.cv_PolyARNAUVwithSA)) & wholeDF$proteinName %in% UVXacceptedProts),]
+UVXwoBKGR <- allDataDF[which((!is.na(allDataDF$RBPomeUVX.cv_PolyARNAUVwithSA)) & allDataDF$proteinName %in% UVXacceptedProts),]
 length(UVXwoBKGR$proteinName); length(unique(UVXwoBKGR$proteinName))
-View(
-  UVXwoBKGR[UVXwoBKGR$proteinName %in% UVXwoBKGR$proteinName[duplicated(UVXwoBKGR$proteinName)],]
-)
+
+View(UVXwoBKGR[UVXwoBKGR$proteinName %in% UVXwoBKGR$proteinName[duplicated(UVXwoBKGR$proteinName)],])
 # Like in FAX the proteins P10081 P02309 are in two locations, so 2 extra rows.
 UVXwoBKGR$proteinName[duplicated(UVXwoBKGR$proteinName)]
 
 outdir <- 'FinalData/'
 saveTablesTsvExc(FAXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 saveTablesTsvExc(UVXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
-
 
 # FAXwoBKGRfile <- "FinalData/FAXwoBKGR.tsv"
 # UVXwoBKGRfile <- "FinalData/UVXwoBKGR.tsv"
@@ -215,14 +283,15 @@ saveTablesTsvExc(UVXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownam
 
 cat(paste(colnames(FAXwoBKGR),collapse = "\n"))
 
-
 columnsSelected <-  c('seqnames','start','end','type','ORF','SGDID','GeneName','proteinName','UniprotACC',
                       'UniprotName','Gene.Names','Protein.names','Gene.Names..ordered.locus.',
-                      'Gene.Names..ORF.','Gene.Names..primary.','Gene.Names..synonym.','Alias','ORFgene',
-                      'DEGs.H202.brep1','DEGs.H202.brep2','DEGs.H202.brep3','DEGs.DTT.brep1','DEGs.DTT.brep2',
-                      'DEGs.DTT.brep3','DEGs.SA.brep1','DEGs.SA.brep2','DEGs.SA.brep3','DEGs.YPD.brep1','DEGs.YPD.brep2',
-                      'DEGs.YPD.brep3','DEGs.adj.pval.H202.YPD','DEGs.log2FC.H202.YPD','DEGs.adj.pval.DTT.YPD',
-                      'DEGs.log2FC.DTT.YPD','DEGs.adj.pval.SA.YPD','DEGs.log2FC.SA.YPD','ProteomeFAX.X014_Pr40.DIA_DIA_D22',
+                      'Gene.Names..ORF.','Gene.Names..primary.','Gene.Names..synonym.','Alias',
+                      'DEGs.H202.brep1.rawCounts','DEGs.H202.brep2.rawCounts','DEGs.H202.brep3.rawCounts',
+                      'DEGs.DTT.brep1.rawCounts','DEGs.DTT.brep2.rawCounts','DEGs.DTT.brep3.rawCounts',
+                      'DEGs.SA.brep1.rawCounts','DEGs.SA.brep2.rawCounts','DEGs.SA.brep3.rawCounts',
+                      'DEGs.YPD.brep1.rawCounts','DEGs.YPD.brep2.rawCounts','DEGs.YPD.brep3.rawCounts',
+                      'DEGs.adj.pval.H202-YPD','DEGs.log2FC.H202-YPD','DEGs.adj.pval.DTT-YPD',
+                      'DEGs.log2FC.DTT-YPD','DEGs.adj.pval.SA-YPD','DEGs.log2FC.SA-YPD','ProteomeFAX.X014_Pr40.DIA_DIA_D22',
                       'ProteomeFAX.X011_Pr40.DIA_DIA_D22','ProteomeFAX.X013_Pr40.DIA_DIA_D22',
                       'ProteomeFAX.X033_Pr40.DIA_DIA_D22','ProteomeFAX.X040_Pr40.DIA_DIA_D22',
                       'ProteomeFAX.X019_Pr40.DIA_DIA_D22','ProteomeFAX.X020_Pr40.DIA_DIA_D22',
@@ -250,6 +319,8 @@ columnsSelected <-  c('seqnames','start','end','type','ORF','SGDID','GeneName','
                       'RBPomeUVX.pValue_PolyARNAUVwithH202','RBPomeUVX.pValue_PolyARNAUVwithSA','RBPomeUVX.qValue_PolyARNAUVwithDTT',
                       'RBPomeUVX.qValue_PolyARNAUVwithH202','RBPomeUVX.qValue_PolyARNAUVwithSA','UVXnetchangesDTT','UVXnetchangesH2O2','UVXnetchangesSA')
 
+columnsSelected[!columnsSelected %in% colnames(FAXwoBKGR)]
+columnsSelected[!columnsSelected %in% colnames(UVXwoBKGR)]
 
 FAXwoBKGR <- FAXwoBKGR[,columnsSelected]
 UVXwoBKGR <- UVXwoBKGR[,columnsSelected]

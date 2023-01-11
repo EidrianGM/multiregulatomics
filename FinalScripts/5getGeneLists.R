@@ -4,10 +4,6 @@ wholeDF <- read.delim(wholeDFFile,quote = "")
 FAXacceptedProts <- read.delim("FinalData/BackgroundRemoval/FAXAccBackGrAcceptedFC3.tsv",header = F)[,1]
 UVXacceptedProts <- read.delim("FinalData/BackgroundRemoval/UVXAccBackGrAcceptedFC3.tsv",header = F)[,1]
 
-outdir <- 'FinalData/'
-saveTablesTsvExc(FAXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
-saveTablesTsvExc(UVXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
-
 ################################################################################
 ######### Generation of GeneLists for Enrichment Analyses ORA and GSEA #########
 ################################################################################
