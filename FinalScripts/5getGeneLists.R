@@ -176,3 +176,56 @@ SAnetchangesUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs
 saveTablesTsvExc(SAnetchangesUVXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
 
+DEGpvalCut <- 0.01
+DEGFCCut <- 3
+protsPvalCut <- 0.05
+fcCut   <- 1
+
+outdir <- "FinalData/GeneLists/ORA"
+files <- list.files(outdir,pattern = "*.txt",full.names = T)
+outdir <- "FinalData/GeneLists/GSEA"
+files <- c(files, list.files(outdir,pattern = "*.tsv",full.names = T))
+stats <- c()
+upreg <- "-"; downreg <- "-"
+file <- files[7]
+
+for (file in files){
+  enrchTec <- gsub(".*/","",dirname(file)) 
+  dataype <- gsub("\\..*","",basename(file))
+  if (enrchTec == "GSEA"){
+    degs <- read.delim(file)  
+    if (grepl('degs',dataype,ignore.case = T)) {
+      fcCut <- 3; pvalCut <- "-"
+      upreg <- degs[which(degs[,2] > fcCut),1]
+      downreg <- degs[which(degs[,2] < -fcCut),1]
+    }else{
+      fcCut <- 1; pvalCut <- "-"
+      upreg <- degs[which(degs[,2] > fcCut),1]
+      downreg <- degs[which(degs[,2] < -fcCut),1]
+    }
+    nsiggenes <- nrow(degs)
+    upregorthologspep <- sum(grepl(";",upreg))
+    downregorthologspep <- sum(grepl(";",downreg))
+    upreg <- length(upreg) - upregorthologspep
+    downreg <- length(downreg) - downregorthologspep
+    northologspep <- upregorthologspep + downregorthologspep
+  }else{
+    if (grepl('degs',dataype,ignore.case = T)) {
+      fcCut <- 3; pvalCut <- 0.01
+    }else{
+      fcCut <- 1; pvalCut <- 0.05
+    }
+    degs <- read.delim(file,header = F)  
+    northologspep <- sum(grepl(";",degs[,1]))
+    nsiggenes <- nrow(degs) - northologspep
+    upregorthologspep <- downregorthologspep <- '-'
+  }
+  stats <- rbind(stats,cbind(enrchTec,dataype,nsiggenes,northologspep,
+                             fcCut,pvalCut,upreg,downreg,
+                             upregorthologspep,downregorthologspep))
+}
+stats <- as.data.frame(stats)
+View(stats)
+outdir <- "FinalData/GeneLists"
+saveTablesTsvExc(stats,outdir,completeNdedup = F,excel = T,bycompleteFC = F,rownames = F)
+

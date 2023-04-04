@@ -11,21 +11,21 @@ medianNOXuvxDF <- read.delim(medianNOXuvxFile);
 meanNOXfaxDF <- read.delim(meanNOXfaxFile);
 meanNOXuvxDF <- read.delim(meanNOXuvxFile);
 
-medianNOXfaxFile <- "FinalData/Raw/correctedRAW/byPEPmedianRBPomeNOX_FAX_np2_NOnorm/byPEPmedianRBPomeNOX_FAX_np2_NOnorm_PROTEIN.tsv"
-medianNOXuvxFile <- "FinalData/Raw/correctedRAW/byPEPmedianRBPomeNOX_UVX_np2_NOnorm/byPEPmedianRBPomeNOX_UVX_np2_NOnorm_PROTEIN.tsv"
-meanNOXfaxFile <- "FinalData/Raw/correctedRAW/byPEPmeanRBPomeNOX_FAX_np2_NOnorm/byPEPmeanRBPomeNOX_FAX_np2_NOnorm_PROTEIN.tsv"
-meanNOXuvxFile <- "FinalData/Raw/correctedRAW/byPEPmeanRBPomeNOX_UVX_np2_NOnorm/byPEPmeanRBPomeNOX_UVX_np2_NOnorm_PROTEIN.tsv"
-outFile <- "FinalData/BackgroundRemoval/ByPEPstatsBGremoval.tsv"
-medianNOXfaxDF <- read.delim(medianNOXfaxFile);
-medianNOXuvxDF <- read.delim(medianNOXuvxFile);
-meanNOXfaxDF <- read.delim(meanNOXfaxFile);
-meanNOXuvxDF <- read.delim(meanNOXuvxFile);
+# medianNOXfaxFile <- "FinalData/Raw/correctedRAW/byPEPmedianRBPomeNOX_FAX_np2_NOnorm/byPEPmedianRBPomeNOX_FAX_np2_NOnorm_PROTEIN.tsv"
+# medianNOXuvxFile <- "FinalData/Raw/correctedRAW/byPEPmedianRBPomeNOX_UVX_np2_NOnorm/byPEPmedianRBPomeNOX_UVX_np2_NOnorm_PROTEIN.tsv"
+# meanNOXfaxFile <- "FinalData/Raw/correctedRAW/byPEPmeanRBPomeNOX_FAX_np2_NOnorm/byPEPmeanRBPomeNOX_FAX_np2_NOnorm_PROTEIN.tsv"
+# meanNOXuvxFile <- "FinalData/Raw/correctedRAW/byPEPmeanRBPomeNOX_UVX_np2_NOnorm/byPEPmeanRBPomeNOX_UVX_np2_NOnorm_PROTEIN.tsv"
+# outFile <- "FinalData/BackgroundRemoval/ByPEPstatsBGremoval.tsv"
+# medianNOXfaxDF <- read.delim(medianNOXfaxFile);
+# medianNOXuvxDF <- read.delim(medianNOXuvxFile);
+# meanNOXfaxDF <- read.delim(meanNOXfaxFile);
+# meanNOXuvxDF <- read.delim(meanNOXuvxFile);
 
 
 ###### mRBPomes UVX and FAX filtering
 
-FAXfile <- "FinalData/SafeQuantResults/RBPomeFAX_np2_norm_gmin_no12/RBPomeFAX_np2_norm_gmin_no12_PROTEIN.tsv"
-UVXfile <- "FinalData/SafeQuantResults/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
+FAXfile <- "FinalData/Raw/correctedRAW/RBPomeFAX_np2_norm_gmin_no12/RBPomeFAX_np2_norm_gmin_no12_PROTEIN.tsv"
+UVXfile <- "FinalData/Raw/correctedRAW/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
 
 FAXdf <- read.delim(FAXfile) 
 UVXdf <- read.delim(UVXfile)
@@ -38,7 +38,6 @@ if(all(UVXdf$proteinName %in% meanNOXuvxDF$proteinName)){
   print("Perfect all proteins in UVX data are in NOX")
 } 
 
-
 #### VennDiagrams to quantify background removal
 library(ggVennDiagram)
 library(ggplot2)
@@ -49,6 +48,7 @@ protsInNOXuvx <- length(medianNOXuvxDF$proteinName)
 protsInFAX <- length(FAXdf$proteinName)
 protsInUVX <- length(UVXdf$proteinName)
 
+FCcutOff <- 3
 for (FCcutOff in 1:5){
   meanabovebackgrProtsFAX <- meanNOXfaxDF$proteinName[which(abs(meanNOXfaxDF$log2ratio_Condition2) > FCcutOff)]
   medianabovebackgrProtsFAX <- medianNOXfaxDF$proteinName[which(abs(medianNOXfaxDF$log2ratio_Condition2) > FCcutOff)]
@@ -111,17 +111,56 @@ belowbackgrProtsUVX <- meanNOXuvxDF$proteinName[which(abs(meanNOXuvxDF$log2ratio
 write(belowbackgrProtsFAX,"FinalData/BackgroundRemoval/FAXAccBackGrRemovedFC3.tsv", sep = "\n")
 write(belowbackgrProtsUVX,"FinalData/BackgroundRemoval/UVXAccBackGrRemovedFC3.tsv", sep = "\n")
 
+nrow(meanNOXfaxDF)
+length(abovebackgrProtsFAX)
+length(belowbackgrProtsFAX)
+
+nrow(meanNOXuvxDF)
+length(abovebackgrProtsUVX)
+length(belowbackgrProtsUVX)
+
+
+
+protsInFAX <- length(FAXdf$proteinName)
+protsInUVX <- length(UVXdf$proteinName)
+
+selectedProtsFAX <- intersect(FAXdf$proteinName,abovebackgrProtsFAX)
+selectedProtsUVX <- intersect(UVXdf$proteinName,abovebackgrProtsUVX)
+
+length(selectedProtsFAX)
+sum(grepl(';',selectedProtsFAX))
+sum(!grepl(';',selectedProtsFAX))
+
+length(selectedProtsUVX)
+sum(grepl(';',selectedProtsUVX))
+sum(!grepl(';',selectedProtsUVX))
+
+toVennList <- list(FAXproteins = FAXdf$proteinName, meanFAXacceptedBGprots = abovebackgrProtsFAX)
+ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
+nameOut <- paste0("FinalData/BackgroundRemoval/FAX_ACCEPTEDbackground_FC",FCcutOff,"_venn.png")
+ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
+
+toVennList <- list(UVXproteins = UVXdf$proteinName, meanUVXacceptedBGprots = abovebackgrProtsUVX)
+ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
+nameOut <- paste0("FinalData/BackgroundRemoval/UVX_ACCEPTEDbackground_FC",FCcutOff,"_venn.png")
+ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
+
+
+nPeps <- length(peptidesInfo$Accession) - nPepsOrth
+nProts <- length(unique(peptidesInfo$Accession)) - nProtsOrth
+
+
+
+
+
 ##### GENERATE HEATMAPS
+meanNOXfaxFile <- "FinalData/Raw/correctedRAW/meanRBPomeNOX_FAX_np2_NOnorm/meanRBPomeNOX_FAX_np2_NOnorm_PROTEIN.tsv"
+meanNOXuvxFile <- "FinalData/Raw/correctedRAW/meanRBPomeNOX_UVX_np2_NOnorm/meanRBPomeNOX_UVX_np2_NOnorm_PROTEIN.tsv"
+meanNOXfaxDF <- read.delim(meanNOXfaxFile)
+meanNOXuvxDF <- read.delim(meanNOXuvxFile)
 
-FAXrbpomeFile <- "FinalData/SafeQuantResults/RBPomeFAX_np2_norm_gmin_no12/RBPomeFAX_np2_norm_gmin_no12_PROTEIN.tsv"
-UVXrbpomeFile <- "FinalData/SafeQuantResults/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
-
-FAXsamplesInfo <- read.delim(FAXrbpomeFile,nrows = 1,header = F)
-FAXsamples <- gsub("_.*","",FAXsamplesInfo[grep("^0",FAXsamplesInfo)])
-UVXsamplesInfo <- read.delim(UVXrbpomeFile,nrows = 1,header = F)
-UVXsamples <- gsub("_.*","",UVXsamplesInfo[grep("^0",UVXsamplesInfo)])
-samples2include <- as.numeric(c(FAXsamples,UVXsamples))
-samples2remove <- c(1,6,2,9)
+samples2include <- c(colnames(meanNOXfaxDF),colnames(meanNOXuvxDF))[grep("X0",c(colnames(meanNOXfaxDF),colnames(meanNOXuvxDF)))]
+samples2include <- unique(as.numeric(gsub("X0|_.*","",samples2include)))
 
 NOXrawFile <- "FinalData/Raw/correctedRAW/NOXmRBPomeRAW.csv"
 myDF <- read.delim(NOXrawFile,nrows = 3,sep = ",")
@@ -134,55 +173,56 @@ subPhenData$class <- gsub(".*\\s","",subPhenData$class); conditionCol <- "class"
 rownames(subPhenData) <- 1:nrow(subPhenData)
 subPhenData$class <- gsub("no.*|with.*","",subPhenData$class)
 subPhenData$id <- as.numeric(subPhenData$id)
-subPhenData <- subPhenData[(subPhenData$class %in% c("FAX","UV") & subPhenData$id %in% samples2include) | (subPhenData$class == "NOX" & !(subPhenData$id %in% samples2remove)),]
+subPhenData <- subPhenData[subPhenData$id %in% samples2include,]
 subPhenData$class <- gsub("UV","UVX",subPhenData$class)
+subPhenData$class <- factor(subPhenData$class,levels = c("NOX","FAX", "UVX"))
 
-
-meanNOXfaxFile <- "FinalData/Raw/correctedRAW/meanRBPomeNOX_FAX_np2_NOnorm/meanRBPomeNOX_FAX_np2_NOnorm_PROTEIN.tsv"
-meanNOXuvxFile <- "FinalData/Raw/correctedRAW/meanRBPomeNOX_UVX_np2_NOnorm/meanRBPomeNOX_UVX_np2_NOnorm_PROTEIN.tsv"
-meanNOXfaxDF <- read.delim(meanNOXfaxFile)
-meanNOXuvxDF <- read.delim(meanNOXuvxFile)
-
-FCcutOff <- 3
-meanNOXfaxDF <- meanNOXfaxDF[which(abs(meanNOXfaxDF$log2ratio_Condition2) > FCcutOff),]
-meanNOXuvxDF <- meanNOXuvxDF[which(abs(meanNOXuvxDF$log2ratio_Condition2) > FCcutOff),]
+saveTablesTsvExc(subPhenData,"FinalData/BackgroundRemoval",completeNdedup=F,excel=T,bycompleteFC=F,rownames=T)
+#### Filter and get expression for HeatMap
 
 meanNOXfaxDF <- meanNOXfaxDF[order(meanNOXfaxDF$log2ratio_Condition2,decreasing = T),]
 meanNOXuvxDF <- meanNOXuvxDF[order(meanNOXuvxDF$log2ratio_Condition2,decreasing = T),]
 
+FCcutOff <- 3
+abovebackgrProtsFAX <- meanNOXfaxDF$proteinName[which(abs(meanNOXfaxDF$log2ratio_Condition2) > FCcutOff)]
+abovebackgrProtsUVX <- meanNOXuvxDF$proteinName[which(abs(meanNOXuvxDF$log2ratio_Condition2) > FCcutOff)]
+abovebackgrProts <- unique(c(abovebackgrProtsFAX,abovebackgrProtsUVX))
+
 rownames(meanNOXfaxDF) <- meanNOXfaxDF$proteinName
-meanNOXfaxDF <- meanNOXfaxDF[abovebackgrProtsFAX,grep("^X",colnames(meanNOXfaxDF))]
+meanNOXfaxDF <- meanNOXfaxDF[,grep("^X",colnames(meanNOXfaxDF))]
 colnames(meanNOXfaxDF) <- as.numeric(gsub("X|_.*","",colnames(meanNOXfaxDF)))
 
 rownames(meanNOXuvxDF) <- meanNOXuvxDF$proteinName
-meanNOXuvxDF <- meanNOXuvxDF[abovebackgrProtsUVX,grep("^X",colnames(meanNOXuvxDF))]
+meanNOXuvxDF <- meanNOXuvxDF[,grep("^X",colnames(meanNOXuvxDF))]
 colnames(meanNOXuvxDF) <- as.numeric(gsub("X|_.*","",colnames(meanNOXuvxDF)))
 
+FAXnUVXbackgroundDF <- merge(meanNOXfaxDF, meanNOXuvxDF,by="row.names",all=T,suffixes = c("","y"))
+row.names(FAXnUVXbackgroundDF) <- FAXnUVXbackgroundDF$Row.names
+FAXnUVXbackgroundDF$Row.names <- NULL
+
+FAXnUVXbackgroundDF <- FAXnUVXbackgroundDF[abovebackgrProts,]
 
 library(ComplexHeatmap)
 library(circlize)
 library(RColorBrewer)
 
 outdir <- "FinalData/BackgroundRemoval"
+tagname <- "Background"
 
-# crosslink <- "FAX"
-# toHMP <- log10(meanNOXfaxDF+1)
-crosslink <- "UVX"
-toHMP <- log10(meanNOXuvxDF+1)
+FAXnUVXbackgroundDF <- FAXnUVXbackgroundDF[colnames(FAXnUVXbackgroundDF)[grep("y",colnames(FAXnUVXbackgroundDF),invert = T)]]
+FAXnUVXbackgroundDF[is.na(FAXnUVXbackgroundDF)] <- 0
 
-tagname <- paste("Background",crosslink)
-subPhenData2 <- subPhenData[subPhenData$class %in% c("NOX",crosslink),]
-subPhenData2$class <- factor(subPhenData2$class,levels = c("NOX",crosslink))
-toHMP <- toHMP[,as.character(subPhenData2$id)]
-
+toHMP <- log10(FAXnUVXbackgroundDF+1)
+toHMP <- toHMP[,as.character(subPhenData$id)]
+toHMP <- toHMP[rev(row.names(toHMP)),]
 colours <- brewer.pal(brewer.pal.info["PuRd",]$maxcolors,"PuRd")
 colourStep <- (max(toHMP,na.rm = T) / brewer.pal.info["PuRd",]$maxcolors)
 breaksColours <- seq(0,max(toHMP,na.rm = T)-colourStep,colourStep)
 col_fun <- colorRamp2(breaksColours, colours) # #574a85
 myHMPplot <- Heatmap(as.matrix(toHMP),cluster_columns = F, cluster_rows = T, col=col_fun,
-                     show_row_names = F,show_row_dend = F, row_km=8,
+                     show_row_names = F,show_row_dend = F, row_km=6,
                      name = "Log10(LFQ)", #top_annotation = colannot,
-                     column_names_rot = 0, column_split = subPhenData2$class,
+                     column_names_rot = 0, column_split = subPhenData$class,
                      heatmap_legend_param = list(
                        legend_direction = "horizontal", 
                        legend_width = unit(5, "cm")
@@ -203,21 +243,18 @@ protsCluster <- as.data.frame(protsCluster)
 colnames(protsCluster) <- c("idx","cluster")
 protsCluster$proteins <- row.names(toHMP)[as.numeric(protsCluster$idx)]
 protsCluster$nProtsInClust <- table(protsCluster$cluster)[as.numeric(protsCluster$cluster)]
-
 protsCluster <- protsCluster[order(as.numeric(protsCluster$idx)),]
 
-backgroundHMAP <- cbind(toHMP,protsCluster)
-backgroundHMAP$idx <- NULL; backgroundHMAP$proteins <- NULL
-outFile <- gsub(" ", "", file.path("FinalData/BackgroundRemoval",tagname), fixed = TRUE)
-write.table(backgroundHMAP,paste0(outFile,".tsv"),row.names = F,col.names = F,quote = F, sep = "\t")
+Background <- cbind(toHMP,protsCluster)
+Background$idx <- NULL; Background$proteins <- NULL
+saveTablesTsvExc(Background,"FinalData/BackgroundRemoval",completeNdedup=F,excel=T,bycompleteFC=F,rownames=T)
 
 rowannot <- rowAnnotation(Cluster=protsCluster$nProtsInClust, show_annotation_name = F, show_legend = F)
-
 myHMPplot <- Heatmap(as.matrix(toHMP),cluster_columns = F, cluster_rows = T, col=col_fun,
                      show_row_names = F,show_row_dend = F, row_split = as.character(protsCluster$nProtsInClust),
                      name = "Log10(LFQ)", #top_annotation = colannot, 
                      left_annotation = rowannot, row_title_rot = 0,
-                     column_names_rot = 0, column_split = subPhenData2$class,
+                     column_names_rot = 0, column_split = subPhenData$class,
                      heatmap_legend_param = list(
                        legend_direction = "horizontal", 
                        legend_width = unit(5, "cm")
@@ -227,4 +264,8 @@ myHMPplot <- Heatmap(as.matrix(toHMP),cluster_columns = F, cluster_rows = T, col
 tiff(file.path(outdir,paste0(gsub("\ ", "",tagname),'HeatMapClustered.tiff')), 1000, nrow(toHMP)*5, pointsize=12,res = "print")
 draw(myHMPplot, heatmap_legend_side="bottom", annotation_legend_side = "left")
 dev.off()
+
+
+
+
 

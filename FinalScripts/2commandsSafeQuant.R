@@ -87,7 +87,7 @@ for (class in unique(subPhenData$class)){
   expDesignTag <- c(expDesignTag,paste(rownames(subPhenData)[subPhenData$class == class],collapse=","))
 }
 expDesignTag <- paste0('"',paste(expDesignTag,collapse = ":"),'"')
-outfilesLabel <- "ProteomeUVX_np2_norm_gmin_no4-6-23-31-32"
+outfilesLabel <- "ProteomeUVX_np1_norm_knngmin_no4-6-23-31-32"
 cmd <- paste("Rscript",commandExec,"-i",Proteomefile,"-l",outfilesLabel,"--EX ",expDesignTag,"--SM knn")
 cat(cmd)
 system(cmd)
@@ -105,7 +105,7 @@ for (class in unique(subPhenData$class)){
   expDesignTag <- c(expDesignTag,paste(rownames(subPhenData)[subPhenData$class == class],collapse=","))
 }
 expDesignTag <- paste0('"',paste(expDesignTag,collapse = ":"),'"')
-outfilesLabel <- "ProteomeFAX_np2_norm_gmin_no15-25-26-36-39"
+outfilesLabel <- "ProteomeFAX_np1_norm_knngmin_no15-25-26-36-39"
 cmd <- paste("Rscript",commandExec,"-i",Proteomefile,"-l",outfilesLabel,"--EX ",expDesignTag,"--SM knn")
 cat(cmd)
 system(cmd)
@@ -119,12 +119,13 @@ system(cmd)
 # Since these are different, the initial NOX raw data must be divided in two
 # NOX_FAX and # NOX_UVX
 
-## removing samples: 
 rawRBPomeNOXfile <- "FinalData/Raw/correctedRAW/NOXmRBPomeRAW.csv"
 
 rawNOXdf <- read.delim(rawRBPomeNOXfile,skip = 2, sep = ",")
 rawFAXdf <- read.delim("FinalData/Raw/correctedRAW/FAXmRBPomeRAW.csv",skip = 2, sep = ",")
 rawUVXdf <- read.delim("FinalData/Raw/correctedRAW/UVXmRBPomeRAW.csv",skip = 2, sep = ",")
+
+rawUVXdf$Accession
 
 
 ############### FILTERING OF NOX BY PEPTIDES ??? ------> Weird issue
@@ -197,8 +198,8 @@ write.table(rawNOXdf2UVX,outFile,sep = ",",append = T,quote = T,row.names = F,co
 ###################################
 rawRBPomeNOXSamplesInfo <- read.delim(rawRBPomeNOXfile,nrows = 3, sep = ",",header = F)
 
-FAXrbpomeFile <- "FinalData/SafeQuantResults/RBPomeFAX_np2_norm_gmin_no12/RBPomeFAX_np2_norm_gmin_no12_PROTEIN.tsv"
-UVXrbpomeFile <- "FinalData/SafeQuantResults/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
+FAXrbpomeFile <- "FinalData/Raw/correctedRAW/RBPomeFAX_np2_norm_gmin_no12/RBPomeFAX_np2_norm_gmin_no12_PROTEIN.tsv"
+UVXrbpomeFile <- "FinalData/Raw/correctedRAW/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
 FAXsamplesInfo <- read.delim(FAXrbpomeFile,nrows = 1,header = F)
 FAXsamples <- gsub("_.*","",FAXsamplesInfo[grep("^0",FAXsamplesInfo)])
 UVXsamplesInfo <- read.delim(UVXrbpomeFile,nrows = 1,header = F)
@@ -238,6 +239,7 @@ for (crosslink in crosslinks){
 
 #### USING THE UNCOMMON PROTEINS REMOVAL IN NOX
 crosslinks <- c("FAX","UVX")
+crosslink <- crosslinks[1]
 for (crosslink in crosslinks){
   rawRBPomeNOXfile <- paste0("FinalData/Raw/correctedRAW/NOX_",crosslink,"mRBPomeRAW.csv")
   rawRBPomeNOXSamplesInfo <- read.delim(rawRBPomeNOXfile,nrows = 2, sep = ",",header = T)
