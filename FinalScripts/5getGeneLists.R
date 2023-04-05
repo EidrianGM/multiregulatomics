@@ -194,6 +194,8 @@ outdir <- "FinalData/GeneLists/GSEA"
 files <- c(files, list.files(outdir,pattern = "*.tsv",full.names = T))
 stats <- c()
 upreg <- "-"; downreg <- "-"
+file <- files[7]
+
 for (file in files){
   enrchTec <- gsub(".*/","",dirname(file)) 
   dataype <- gsub("\\..*","",basename(file))
@@ -208,7 +210,7 @@ for (file in files){
       upreg <- degs[which(degs[,2] > fcCut),1]
       downreg <- degs[which(degs[,2] < -fcCut),1]
     }
-    nsiggenes <- length(upreg) + length(downreg)
+    nsiggenes <- nrow(degs)
     upregorthologspep <- sum(grepl(";",upreg))
     downregorthologspep <- sum(grepl(";",downreg))
     upreg <- length(upreg) - upregorthologspep

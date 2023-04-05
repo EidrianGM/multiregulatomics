@@ -30,8 +30,21 @@ myResults$DE.pval
 
 
 RNAseqRepaired <- myResults$DE.stat
-outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/RNA-Seq data/correction"
+outdir <- "FinalData/RNAseqCorrected/"
 saveTablesTsvExc(RNAseqRepaired,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+RNAseqRepaired <- read.xlsx("FinalData/RNAseqCorrected/RNAseqRepaired.xlsx")
+DEGsDF <- reshape(RNAseqRepaired, direction = "wide", idvar = "target", timevar = "contrast")
+saveTablesTsvExc(DEGsDF,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+
+length(unique(DEGsDF$target))
+
+sum(DEGsDF$`adj.pval.SA-YPD` < 0.01 & abs(DEGsDF$`log2FC.SA-YPD`) > 3)
+sum(DEGsDF$`log2FC.SA-YPD` > 3)
+sum(DEGsDF$`log2FC.SA-YPD` < -3)
+
+length(unique(DEGsDF$target[DEGsDF$`adj.pval.SA-YPD` < 0.01]))
+
+View(myRNAseqResults)
 
 View(myResults)
 
@@ -69,7 +82,7 @@ for (mycontrast in contrast){
   nameOut <- paste0("data/RNA-Seq data/correction/",mycontrast,"FCs_corrplot.png")
   ggsave(filename = nameOut, plot = corScatterSA, width = 30, height = 15, units = 'cm', dpi = 'print')
   
-    myPvals <- myResultsPvals[comparableGens, mycontrast]
+  myPvals <- myResultsPvals[comparableGens, mycontrast]
   x <- -log10(myPvals)
   y <- -log10(ibSAYPDdf$adj.pval)
   toCorPlotDF <- as.data.frame(cbind(x=x,y=y))

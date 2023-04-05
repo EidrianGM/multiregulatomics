@@ -1,22 +1,32 @@
-source("scripts/GC4libR.R")
+source("FinalScripts/GC4libR.R")
 library(fgsea)
 setwd("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics")
 
 ################################################################################
 ############### 1. OVERREPRESENTATION ANALYSIS WITH GENECODIS4 #################
 ################################################################################
-doGC4ORA <- function(dirWithGeneLists,orthologs=TRUE){
+
+# GENERATE CUSTOM BACKGROUND UNIVERSES
+
+doGC4ORA <- function(dirWithGeneLists,mycustomUniverse=list(),outtag='',orthologs=TRUE){
   GSAlists <- list.files(dirWithGeneLists,pattern = "*.txt",all.files = T,full.names = T)
-  outdir <- gsub("GeneLists","EnrichmentResults",dirWithGeneLists)
+  outdir <- paste0(gsub("GeneLists","EnrichmentResults",dirWithGeneLists),outtag)
   dir.create(outdir,recursive = T,showWarnings = F)
   for (GSAlist in GSAlists){
     siggenes <- read.delim(GSAlist,header = F)[,1]
     if (any(grepl(";",siggenes)) & orthologs){
       siggenes <- unique(unlist(strsplit(siggenes,";")))
     }
-    enrFile <- gsub(".txt",".Enr.tsv",gsub("GeneLists","EnrichmentResults",GSAlist),fixed = T) # ORA results
-    qcFile <- gsub(".txt",".QCEnr.tsv",gsub("GeneLists","EnrichmentResults",GSAlist),fixed = T) # Quality Control of ORA
+    enrFile <- file.path(outdir,gsub(".txt",paste0(outtag,".Enr.tsv"),basename(GSAlist),fixed = T)) # ORA results
+    qcFile <- file.path(outdir,gsub(".txt",paste0(outtag,".QCEnr.tsv"),basename(GSAlist),fixed = T)) # Quality Control of ORA
     if (file.exists(qcFile)){next}
+    
+    if (length(mycustomUniverse) == 0){
+      myUniverse = list()
+    }else{
+      myUniverse = mycustomUniverse[[gsub('.txt','',basename(GSAlist))]]
+    }
+    
     resultado <- launchAnalysis(organism = "Saccharomyces cerevisiae",
                                 inputType = "genes",
                                 inputQuery = siggenes,
@@ -24,19 +34,39 @@ doGC4ORA <- function(dirWithGeneLists,orthologs=TRUE){
                                 inputCoannotation = "no",
                                 universeScope = "annotated",
                                 enrichmentStat = "hypergeom",
-                                ReportName=gsub(".tsv|.txt","",basename(GSAlist)))
-    
+                                ReportName=gsub(".tsv|.txt","",basename(GSAlist)),
+                                customUniverse=myUniverse)
     results <- summaryGC4results(resultado)
     write.table(results[["enr"]],enrFile,quote = F,sep = '\t',col.names = T,row.names = F)
     write.table(results[["qc"]],qcFile,quote = F,sep = '\t',col.names = T,row.names = F)
   }
 }
 
-dirWithGeneLists <- "FinalData/GeneLists/ORA"
-doGC4ORA(dirWithGeneLists,orthologs=TRUE)
+SAdegsGSEAFile <- "FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
+SAProteomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeFAXgsea.tsv"
+SARBPomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeFAXgsea.tsv"
+SAnetchangesFAXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesFAXgsea.tsv"
+SAProteomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeUVXgsea.tsv"
+SARBPomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeUVXgsea.tsv"
+SAnetchangesUVXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesUVXgsea.tsv"
 
-dirWithGeneLists <- "FinalData/GeneLists/ORAseparatedUpnDw"
-doGC4ORA(dirWithGeneLists,orthologs=TRUE)
+myfiles <- c(SAdegsGSEAFile,SAnetchangesFAXgseaFile,SAProteomeFAXgseaFile,SARBPomeFAXgseaFile, 
+             SAnetchangesUVXgseaFile,SARBPomeUVXgseaFile)
+# myfiles should have the same order as GSAlists
+mycustomUniverse <- lapply(myfiles, function(x){unique(unlist(strsplit(read.delim(x)[,1],";")))})
+names(mycustomUniverse) <- gsub('.tsv','',basename(myfiles))
+
+dirWithGeneLists <- "FinalData/GeneLists/ORA"
+GSAlists <- list.files(dirWithGeneLists,pattern = "*.txt",all.files = T,full.names = T)
+gsub('.txt','',basename(GSAlists))
+names(mycustomUniverse)
+
+names(mycustomUniverse) <- gsub('.txt','',basename(GSAlists))
+outtag <- '.customREF'
+doGC4ORA(dirWithGeneLists,mycustomUniverse,outtag)
+
+outtag <- ''
+doGC4ORA(dirWithGeneLists)
 
 ################################################################################
 ################################# 2. GSEA  #####################################
@@ -76,9 +106,6 @@ for (db in unique(allDBs$db)){
 ################################################################################
 library(tidyr)
 library(fgsea)
-
-
-dirname("a/b/c/asda.txt")
 
 doGSEAs <- function(GSEAFile,gseaDB,minGeneset,maxGeneset, orthologs=T) {
   outfile <- gsub("GeneLists","EnrichmentResults",GSEAFile)

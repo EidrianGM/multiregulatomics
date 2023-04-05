@@ -18,7 +18,7 @@ getFAAs <- function(genes){
     return('')
 }
 
-getORAplots <- function(ORAfiles){
+getORAplots <- function(ORAfiles,mywidht=4000,myheight=1000){
   allORAresults <- c()
   for (ORAfile in ORAfiles){
     ORAdf <- read.delim(ORAfile)
@@ -97,10 +97,11 @@ getORAplots <- function(ORAfiles){
     theme(axis.text.y = element_text(size = 10, face = 'bold'),
           strip.text = element_text(hjust = 0.5, size = 12, face = 'bold'))
   
+  myheight <- max(myheight,length(unique(masterEAdf$fulldesc)) * 50)
   outdivice <- "tiff"
   ggsave(paste0(outfile,".",outdivice), plot = myplot, device = outdivice, scale = 1, dpi = "print", 
-         width = 4000, height = length(unique(masterEAdf$fulldesc)) * 50, units = 'px', limitsize = FALSE)
-  
+         width = mywidht, height = myheight, units = 'px', limitsize = FALSE)
+
   ################################################################################
   ################# 3. Cluster Annotations by Genes sharing ######################
   ################################################################################
@@ -182,8 +183,8 @@ getORAplots <- function(ORAfiles){
             strip.text = element_text(hjust = 0.5, size = 12, face = 'bold'))
     
     ggsave(paste0(outfile,k,"Clusters.",outdivice), plot = myplot, device = outdivice, scale = 1, dpi = "print", 
-           width = 4000, height = length(unique(masterEAdf2plot_cluster$fulldesc)) * 55, units = 'px', limitsize = FALSE)
-    
+           width = mywidht, height = myheight, units = 'px', limitsize = FALSE)
+
     masterEAdf2plot_clusterGenes <- masterEAdf2plot_cluster
     masterEAdf2plot_clusterGenes$clusterGenes <- 1:nrow(masterEAdf2plot_clusterGenes)
     for (k in unique(masterEAdf2plot_cluster$cluster)){
@@ -207,7 +208,7 @@ getORAplots <- function(ORAfiles){
             strip.text.y.right = element_text(angle = 0, size = 4))
     
     ggsave(paste0(outfile,k,"Clusters_EnrGenes.",outdivice), plot = myplot, device = outdivice, scale = 1, dpi = "print",
-           width = 4000, height = length(unique(masterEAdf2plot_clusterGenes$fulldesc)) * 55, units = 'px', limitsize = FALSE)
+           width = mywidht, height = myheight, units = 'px', limitsize = FALSE)
   }
 } 
 
@@ -225,7 +226,6 @@ getORAplots <- function(ORAfiles){
 # treatment <- "SA"; crosslink <- "FAX"
 # ORAfiles <- list.files(ORAfilesDir,pattern = paste0(treatment,".*(DEGs|",crosslink,").*\\.Enr.tsv"),full.names = T)
 # getORAplots(ORAfiles)
-
 ORAfilesDir <- "FinalData/EnrichmentResults/ORA"
 treatment <- "SA"; crosslink <- "UVX"
 ORAfiles <- list.files(ORAfilesDir,pattern = paste0(treatment,".*(DEGs|",crosslink,").*\\.Enr.tsv"),full.names = T)
@@ -234,3 +234,12 @@ getORAplots(ORAfiles)
 treatment <- "SA"; crosslink <- "FAX"
 ORAfiles <- list.files(ORAfilesDir,pattern = paste0(treatment,".*(DEGs|",crosslink,").*\\.Enr.tsv"),full.names = T)
 getORAplots(ORAfiles)
+
+ORAfilesDir <- "FinalData/EnrichmentResults/ORAcustomREF"
+treatment <- "SA"; crosslink <- "UVX"
+ORAfiles <- list.files(ORAfilesDir,pattern = paste0(treatment,".*(DEGs|",crosslink,").*\\.Enr.tsv"),full.names = T)
+getORAplots(ORAfiles)
+
+treatment <- "SA"; crosslink <- "FAX"
+ORAfiles <- list.files(ORAfilesDir,pattern = paste0(treatment,".*(DEGs|",crosslink,").*\\.Enr.tsv"),full.names = T)
+getORAplots(ORAfiles,myheight = 2000)

@@ -33,8 +33,18 @@ subDF <- completeNdedup(wholeDF[,c(fcColumns[1],pvalsCols[1])])
 colnames(subDF) <- c("log2FoldChange","FDR")
 
 limsData <- c()
-for (idx in 1:length(fcColumns)){
-  outName <- paste(rev(phenoData[idx,]),collapse = " ")
+
+SELpvalsCols <- pvalsCols[grep("SA|Condition4",fcColumns)]
+SELfcColumns <- fcColumns[grep("SA|Condition4",fcColumns)]
+subphenoData <- phenoData[phenoData$treatment == 'SA',]
+
+mysubDF <- wholeDF[which(wholeDF$proteinName %in% UVXacceptedProts),c('proteinName',SELfcColumns[idx],SELpvalsCols[idx])]
+
+length(mysubDF$proteinName)
+length(unique(mysubDF$proteinName))
+
+for (idx in 1:length(SELfcColumns)){
+  outName <- paste0(rev(subphenoData[idx,]),collapse = "")
   outdir <- "FinalData/EnrichmentResults/Visualizations/VulcanoPlots"
   if (grepl("Transc",outName)){
     pvalCutOff <- 0.01
@@ -44,15 +54,15 @@ for (idx in 1:length(fcColumns)){
     FCcutoff <- 1
   }
   if (grepl("FAX", outName)){
-    subDF <- completeNdedup(wholeDF[which(wholeDF$proteinName %in% FAXacceptedProts),c(fcColumns[idx],pvalsCols[idx])])
+    subDF <- completeNdedup(wholeDF[which(wholeDF$proteinName %in% FAXacceptedProts),c(SELfcColumns[idx],SELpvalsCols[idx])])
   }else if(grepl("UVX", outName)){
-    subDF <- completeNdedup(wholeDF[which(wholeDF$proteinName %in% UVXacceptedProts),c(fcColumns[idx],pvalsCols[idx])])
+    subDF <- completeNdedup(wholeDF[which(wholeDF$proteinName %in% UVXacceptedProts),c(SELfcColumns[idx],SELpvalsCols[idx])])
   }else{
-    subDF <- completeNdedup(wholeDF[,c(fcColumns[idx],pvalsCols[idx])])
+    subDF <- completeNdedup(wholeDF[,c(SELfcColumns[idx],SELpvalsCols[idx])])
   }
   if (grepl("NetChanges", outName)){
     xLabel <- "NetChanges"
-    yLabel <- "mRBP FDR"
+    yLabel <- "mRBPFDR"
   }else{
     xLabel <- "log2FoldChange"
     yLabel <- "FDR"

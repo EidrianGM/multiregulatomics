@@ -16,7 +16,7 @@ DEGsDF <- reshape(DEGsDF, direction = "wide", idvar = "target", timevar = "contr
 
 TPMsFile <- "data/RNA-Seq data/result/counts_trans.csv"
 TPMsDF <- read.delim(TPMsFile, sep = ",") 
-colnames(TPMsDF)[2:ncol(TPMsDF)] <- paste0(colnames(TPMsDF)[2:ncol(TPMsDF)],".rawCounts")
+colnames(TPMsDF)[2:ncol(TPMsDF)] <- paste0(colnames(TPMsDF)[2:ncol(TPMsDF)],".TPMcounts")
 TPMsDF$X <- gsub("_.*","",TPMsDF$X)
 
 DEGsDFfull <- merge(TPMsDF,DEGsDF,by.x="X",by.y="target")
@@ -70,7 +70,12 @@ ProteomeUVX <- read.delim(ProteomeUVXfile); nrow(ProteomeUVX)
 RBPomeFAX <- read.delim(RBPomeFAXfile); nrow(RBPomeFAX)
 RBPomeUVX <- read.delim(RBPomeUVXfile); nrow(RBPomeUVX)
 
-commonCols <- intersect(colnames(ProteomeFAX),colnames(ProteomeUVX))
+# protinfo <- RBPomeUVX$proteinName
+# totalProts <- length(protinfo); totalProts
+# nProtsOrth <- sum(grepl(';',unique(protinfo))); nProtsOrth
+# nProts <- totalProts - nProtsOrth; nProts
+
+commonCols <- colnames(ProteomeUVX)[1:8] #intersect(colnames(ProteomeFAX),colnames(ProteomeUVX))
 
 colnames(ProteomeFAX) <- paste0("ProteomeFAX.",colnames(ProteomeFAX))
 colnames(ProteomeUVX) <- paste0("ProteomeUVX.",colnames(ProteomeUVX))
@@ -209,9 +214,6 @@ orthologsFullMap$proteinName.x <- NULL
 orthologsFullMap$orthologsIDs <- NULL
 colnames(orthologsFullMap)[17] <- gsub("\\.y","",colnames(orthologsFullMap)[17])
 
-View(orthologsFullMap)
-
-
 FAXnUVXfullMapped <- rbind(FAXnUVXmapped,FAXnUVXmapped2,orthologsFullMap)
 FAXnUVXfullMapped <- FAXnUVXfullMapped[,c(colnames(yeastGenesProtMap), colnames(FAXnUVXfullMapped)[!(colnames(FAXnUVXfullMapped) %in% colnames(yeastGenesProtMap))])]
 
@@ -248,6 +250,7 @@ for (xCol in colnames(DEGsnFAXnUVX)[grep("\\.x",colnames(DEGsnFAXnUVX))]){
 }
 colnames(DEGsnFAXnUVX) <- gsub("\\.x","",colnames(DEGsnFAXnUVX))
 
+library(plyr)
 allDataDF <- rbind.fill(DEGsnFAXnUVX,FAXnUVXfullMapOrtho)
 
 outdir <- "FinalData"
