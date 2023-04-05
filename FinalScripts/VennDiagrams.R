@@ -62,6 +62,31 @@ ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) +
 nameOut <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/BackgroundRemoval/ORFsBackgroundStatus.tiff"
 ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
 
+FAXfinalDFfile <- "FinalData/TablesForPublication/FAXwoBKGR.tsv"
+UVXfinalDFfile <- "FinalData/TablesForPublication/UVXwoBKGR.tsv"
+FAXfinalDF <- read.delim(FAXfinalDFfile)
+UVXfinalDF <- read.delim(UVXfinalDFfile)
 
+toVennList <- list(FAX = FAXfinalDF$proteinName, UVX = UVXfinalDF$proteinName)
+ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "FinalData/TablesForPublication/FAXnUVXwoBKGR.tiff"
+ggsave(filename = nameOut, plot = ggvennSA, width = 10, height = 10, units = 'cm', dpi = 'print')
 
+common <- intersect(FAXfinalDF$proteinName,UVXfinalDF$proteinName)
+FAXesp <- setdiff(FAXfinalDF$proteinName,UVXfinalDF$proteinName)
+UVXesp <- setdiff(UVXfinalDF$proteinName,FAXfinalDF$proteinName)
 
+FAXnUVXdf <- merge(FAXfinalDF,UVXfinalDF,all = T)
+vennStatus <- 1:nrow(FAXnUVXdf)
+vennStatus[FAXnUVXdf$proteinName %in% common] <- "common"
+vennStatus[FAXnUVXdf$proteinName %in% FAXesp] <- "FAX"
+vennStatus[FAXnUVXdf$proteinName %in% UVXesp] <- "UVX"
+FAXnUVXdf <- FAXnUVXdf[,colnames(FAXnUVXdf)[1:17]]
+FAXnUVXdf$vennStatus <- vennStatus
+outdir <- "FinalData/TablesForPublication"
+FAXnUVXvennDF <- FAXnUVXdf
+saveTablesTsvExc(FAXnUVXvennDF,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+
+FAXnUVXvennDF$proteinName[FAXnUVXvennDF$proteinName %in% FAXnUVXvennDF$proteinName[duplicated(FAXnUVXvennDF$proteinName)]]

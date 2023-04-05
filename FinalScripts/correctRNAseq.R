@@ -99,9 +99,6 @@ load("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/RNA-Seq data/da
 # myresultsglm <- edgeR.pipeline(dge = genes_dge,design = design,deltaPS = NULL,contrast = contrast,diffAS = F,method = 'glm',adjust.method = pval_adj_method)
 
 
-
-
-
 cor(mySAYPDdf,ibSAYPDdf$log2FC)
 
 View(mySAYPDdf)
@@ -117,16 +114,6 @@ myresultsExact <- limma.pipeline(genes_dge,contrast,0.5,designDGE,voomWeights = 
 
 myresultsExact <- limma.pipeline(genes_dge,contrast,0.5,designDGE,voomWeights = T)
 
-#myresults <- limma.pipeline(dge,contrast,0.5,design)
-
-
-# myresultsW <- limma.pipeline(dge,contrast,0.5,design,voomWeights = T)
-
-myresults$DE.pval["snR31",]
-myresults$DE.lfc["snR31",]
-
-myresultsW$DE.pval["snR31",]
-myresultsW$DE.lfc["snR31",]
 
 limma.pipeline <- function(dge,
                            contrast,
@@ -400,43 +387,54 @@ summaryStat  <- function(x,y,target,
   stat
 }
 
-# span <- 0.5
-# adjust.method <- 'BH'
-# voom.object <- voomWithQualityWeights(dge,design,plot=F,span = span)
-# #voom.object <- voom(dge,design,plot=F,span = span)
-# targets <- rownames(voom.object$E)
-# fit.lmFit <- lmFit(voom.object, design)
-# ##########################################################
-# ##--Fit a basic linear model
-# cat('> Fit the contrast model ...','\n')
-# contrast.matrix <- makeContrasts(contrasts = contrast, levels=design)
-# print(paste0('Contrast groups: ',paste0(contrast,collapse = '; ')))
-# fit.contrast <- contrasts.fit(fit.lmFit, contrast.matrix)
-# 
-# ##########################################################
-# ##--Fit a eBayes model
-# cat('> Fit a eBayes model ...','\n')
-# fit.eBayes <- eBayes(fit.contrast)
-# 
-# ##########################################################
-# ##--Testing statistics for each contrast group
-# cat('> Testing for each contrast group ...','\n')
-# DE.pval.list <- lapply(contrast,function(i){
-#   x <- topTable(fit.eBayes,
-#                 coef=i,
-#                 adjust.method = adjust.method,
-#                 number = Inf)
-#   x <- x[targets,]
-#   x
-# })
-# names(DE.pval.list) <- contrast
-# 
-# ###---DE pval and lfc
-# DE.pval <- do.call(cbind,lapply(DE.pval.list,FUN = function(x) x$adj.P.Val))
-# DE.lfc <- do.call(cbind,lapply(DE.pval.list,FUN = function(x) x$logFC))
-# rownames(DE.pval) <- rownames(DE.lfc) <- targets
-# colnames(DE.pval) <- colnames(DE.lfc) <- contrast
-# 
-# DE.pval.list$`SA-YPD`["snR31",]
+
+oldRNAseqDF <- read.delim("data/RNA-Seq data/result/DE genes Adrian.csv",sep = ",")
+newRNAseqDF <- read.delim("FinalData/RNAseqCorrected/RNAseqRepaired.tsv",sep = "\t")
+mycontrast <- "SA-YPD"
+DEGpvalCut <- 0.01
+DEGFCCut <- 3
+
+oldRNAseqDEGs <- oldRNAseqDF$target[oldRNAseqDF$contrast == mycontrast & oldRNAseqDF$adj.pval < DEGpvalCut & abs(oldRNAseqDF$log2FC > DEGFCCut)]
+newRNAseqDEGs <- newRNAseqDF$target[newRNAseqDF$contrast == mycontrast & newRNAseqDF$adj.pval < DEGpvalCut & abs(newRNAseqDF$log2FC > DEGFCCut)]
+
+
+library(ggVennDiagram)
+library(ggplot2)
+
+toVennList <- list(old = oldRNAseqDEGs, new = newRNAseqDEGs)
+ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "FinalData/RNAseqCorrected/DEGsOldVSNew.tiff"
+ggsave(filename = nameOut, plot = ggvennSA, width = 10, height = 10, units = 'cm', dpi = 'print')
+
+toVennList <- list(old = oldRNAseqDEGs, new = newRNAseqDEGs, exist=yeastGenesProtMap$ORF)
+ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "FinalData/RNAseqCorrected/DEGsOldVSNewFromAvailable.tiff"
+ggsave(filename = nameOut, plot = ggvennSA, width = 10, height = 10, units = 'cm', dpi = 'print')
+
+oldDEGsEsp <- setdiff(oldRNAseqDEGs,newRNAseqDEGs)
+newDEGsEsp <- setdiff(newRNAseqDEGs,oldRNAseqDEGs)
+
+oldRNAseqDEGsNoExist <- oldRNAseqDEGs[!(oldRNAseqDEGs %in% yeastGenesProtMap$ORF)]
+oldRNAseqDEGsNoExist <- gsub("_.*","",oldRNAseqDEGsNoExist)
+oldRNAseqDEGsNoExistDF <- yeastGenesProtMap[grep(paste(oldRNAseqDEGsNoExist,collapse = "|"),yeastGenesProtMap$ORF),]
+
+oldDEGsEspORFgene <- gsub("_.*","",gsub("-.*","",oldDEGsEsp))
+oldDEGsEspDF <- yeastGenesProtMap[grep(paste(oldDEGsEspORFgene,collapse = "|"),yeastGenesProtMap$ORF),]
+oldDEGsEspDF <- oldDEGsEspDF[grep("gene",oldDEGsEspDF$type),]
+
+oldDEGsEspDF$ORFfirstRNAseq <- gsub("-.*","",oldDEGsEspDF$ORF)
+
+oldDEGsEspDF <- oldDEGsEspDF[,c("ORFfirstRNAseq","ORF","UniprotACC")]
+
+badMergedORFs <- oldDEGsEspDF[oldDEGsEspDF$ORFfirstRNAseq %in% oldDEGsEspDF$ORFfirstRNAseq[duplicated(oldDEGsEspDF$ORFfirstRNAseq)],]
+badMergedORFs <- badMergedORFs[order(badMergedORFs$ORFfirstRNAseq),]
+outdir <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/RNAseqCorrected"
+saveTablesTsvExc(badMergedORFs,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+
+paste(unique(badMergedORFs$ORFfirstRNAseq),collapse = " ")
 
 

@@ -257,15 +257,25 @@ saveTablesTsvExc(allDataDF,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownam
 
 FAXacceptedProts <- read.delim("FinalData/BackgroundRemoval/FAXAccBackGrAcceptedFC3.tsv",header = F)[,1]
 UVXacceptedProts <- read.delim("FinalData/BackgroundRemoval/UVXAccBackGrAcceptedFC3.tsv",header = F)[,1]
+allDataDF <- read.delim("FinalData/allDataDF.tsv")
 
-FAXwoBKGR <- allDataDF[which((!is.na(allDataDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA)) & allDataDF$proteinName %in% FAXacceptedProts),]
+FAXmRBP <- allDataDF[which((!is.na(allDataDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA))),]
+length(FAXmRBP$proteinName); length(unique(FAXmRBP$proteinName))
+
+FAXwoBKGR <- FAXmRBP[which(FAXmRBP$proteinName %in% FAXacceptedProts),]
 length(FAXwoBKGR$proteinName); length(unique(FAXwoBKGR$proteinName))
 
 # The proteins P10081 P02309 P32324 P02994 are located in two different chromosomal position this means an extra 4 rows due to mapping
 FAXwoBKGR$proteinName[duplicated(FAXwoBKGR$proteinName)]
 View(FAXwoBKGR[FAXwoBKGR$proteinName %in% FAXwoBKGR$proteinName[duplicated(FAXwoBKGR$proteinName)],])
 
-UVXwoBKGR <- allDataDF[which((!is.na(allDataDF$RBPomeUVX.cv_PolyARNAUVwithSA)) & allDataDF$proteinName %in% UVXacceptedProts),]
+UVXwoBKGR <- allDataDF[which((!is.na(allDataDF$RBPomeUVX.log2ratio_PolyARNAUVwithSA)) & allDataDF$proteinName %in% UVXacceptedProts),]
+length(UVXwoBKGR$proteinName); length(unique(UVXwoBKGR$proteinName))
+
+UVXmRBP <- allDataDF[which((!is.na(allDataDF$RBPomeUVX.log2ratio_PolyARNAUVwithSA))),]
+length(UVXmRBP$proteinName); length(unique(UVXmRBP$proteinName))
+
+UVXwoBKGR <- UVXmRBP[which(UVXmRBP$proteinName %in% UVXacceptedProts),]
 length(UVXwoBKGR$proteinName); length(unique(UVXwoBKGR$proteinName))
 
 View(UVXwoBKGR[UVXwoBKGR$proteinName %in% UVXwoBKGR$proteinName[duplicated(UVXwoBKGR$proteinName)],])

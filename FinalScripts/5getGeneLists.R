@@ -45,6 +45,7 @@ SAdegsQSig <- wholeDF$DEGs.adj.pval.SA.YPD < DEGpvalCut
 SAdegsUpFC <- wholeDF$DEGs.log2FC.SA.YPD > DEGFCCut
 SAdegsDwFC <- wholeDF$DEGs.log2FC.SA.YPD < -DEGFCCut
 
+SADEGs <- getIDsList(wholeDF,which(SAdegsQSig),DEGsIDs)
 SADEGsUpFC <- getIDsList(wholeDF,which(SAdegsQSig & SAdegsUpFC),DEGsIDs)
 SADEGsDwFC <- getIDsList(wholeDF,which(SAdegsQSig & SAdegsDwFC),DEGsIDs)
 
@@ -65,6 +66,9 @@ SAFAXrbpmUpFC <- wholeDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA > fcCut
 SAFAXrbpmDwFC <- wholeDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA < -fcCut
 SAFAXupNC <- wholeDF$FAXnetchangesSA > fcCut
 SAFAXdwNC <- wholeDF$FAXnetchangesSA < -fcCut
+
+SAfaxDEGsProt <- getIDsList(wholeDF,which(SAFAXprotQSig),ProtIDs)
+SAfaxDEGsmRBP <- getIDsList(wholeDF,which(SAFAXrbpmQsig),ProtIDs)
 
 SAFAXprotUpFC <- getIDsList(wholeDF, which(SAFAXprotQSig & SAFAXprotUpFC), ProtIDs)
 SAFAXprotDwFC <- getIDsList(wholeDF, which(SAFAXprotQSig & SAFAXprotDwFC), ProtIDs)
@@ -98,6 +102,9 @@ SAUVXrbpmUpFC <- wholeDF$RBPomeUVX.log2ratio_PolyARNAUVwithSA > fcCut
 SAUVXrbpmDwFC <- wholeDF$RBPomeUVX.log2ratio_PolyARNAUVwithSA < -fcCut
 SAUVXupNC <- wholeDF$UVXnetchangesSA > fcCut
 SAUVXdwNC <- wholeDF$UVXnetchangesSA < -fcCut
+
+SAuvxDEGsProt <- getIDsList(wholeDF,which(SAUVXprotQSig),ProtIDs)
+SAuvxDEGsmRBP <- getIDsList(wholeDF,which(SAUVXrbpmQsig),ProtIDs)
 
 SAUVXprotUpFC <- getIDsList(wholeDF,which(SAUVXprotQSig & SAUVXprotUpFC),ProtIDs)
 SAUVXprotDwFC <- getIDsList(wholeDF,which(SAUVXprotQSig & SAUVXprotDwFC),ProtIDs)
@@ -175,4 +182,55 @@ saveTablesTsvExc(SARBPomeUVXgsea,outdir,completeNdedup = F,excel = F,bycompleteF
 SAnetchangesUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs,"netchanges",UVXacceptedProts) # 9 change
 saveTablesTsvExc(SAnetchangesUVXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
+
+DEGpvalCut <- 0.01
+DEGFCCut <- 3
+protsPvalCut <- 0.05
+fcCut   <- 1
+
+outdir <- "FinalData/GeneLists/ORA"
+files <- list.files(outdir,pattern = "*.txt",full.names = T)
+outdir <- "FinalData/GeneLists/GSEA"
+files <- c(files, list.files(outdir,pattern = "*.tsv",full.names = T))
+stats <- c()
+upreg <- "-"; downreg <- "-"
+for (file in files){
+  enrchTec <- gsub(".*/","",dirname(file)) 
+  dataype <- gsub("\\..*","",basename(file))
+  if (enrchTec == "GSEA"){
+    degs <- read.delim(file)  
+    if (grepl('degs',dataype,ignore.case = T)) {
+      fcCut <- 3; pvalCut <- "-"
+      upreg <- degs[which(degs[,2] > fcCut),1]
+      downreg <- degs[which(degs[,2] < -fcCut),1]
+    }else{
+      fcCut <- 1; pvalCut <- "-"
+      upreg <- degs[which(degs[,2] > fcCut),1]
+      downreg <- degs[which(degs[,2] < -fcCut),1]
+    }
+    nsiggenes <- length(upreg) + length(downreg)
+    upregorthologspep <- sum(grepl(";",upreg))
+    downregorthologspep <- sum(grepl(";",downreg))
+    upreg <- length(upreg) - upregorthologspep
+    downreg <- length(downreg) - downregorthologspep
+    northologspep <- upregorthologspep + downregorthologspep
+  }else{
+    if (grepl('degs',dataype,ignore.case = T)) {
+      fcCut <- 3; pvalCut <- 0.01
+    }else{
+      fcCut <- 1; pvalCut <- 0.05
+    }
+    degs <- read.delim(file,header = F)  
+    northologspep <- sum(grepl(";",degs[,1]))
+    nsiggenes <- nrow(degs) - northologspep
+    upregorthologspep <- downregorthologspep <- '-'
+  }
+  stats <- rbind(stats,cbind(enrchTec,dataype,nsiggenes,northologspep,
+                             fcCut,pvalCut,upreg,downreg,
+                             upregorthologspep,downregorthologspep))
+}
+stats <- as.data.frame(stats)
+View(stats)
+outdir <- "FinalData/GeneLists"
+saveTablesTsvExc(stats,outdir,completeNdedup = F,excel = T,bycompleteFC = F,rownames = F)
 
