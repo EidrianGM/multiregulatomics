@@ -134,10 +134,21 @@ outdir <- "FinalData"
 saveTablesTsvExc(FAXnUVXdf,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 ################################################################################
+########################## ADDING NOX DATA #################################
+################################################################################
+NOXproteomeFile <- 'FinalData/Raw/correctedRAW/ProteomeNOX_np1_norm_knngmin/ProteomeNOX_np1_norm_knngmin_PROTEIN.tsv'
+NOXproteome <- read.delim(NOXproteomeFile); nrow(NOXproteome)
+colnames(NOXproteome) <- paste0("ProteomeNOX.",colnames(NOXproteome))
+colnames(NOXproteome)[1] <- "proteinName"
+
+NOXnFAXnUVXdf <- merge(NOXproteome,FAXnUVXdf,all = T, by = "proteinName"); nrow(NOXproteome); nrow(FAXnUVXdf); nrow(NOXnFAXnUVXdf)
+saveTablesTsvExc(NOXnFAXnUVXdf,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+
+################################################################################
 ########################## MAPPING FAX and UVX #################################
 ################################################################################
 
-FAXnUVXFile <- "FinalData/FAXnUVXdf.tsv"
+FAXnUVXFile <- "FinalData/NOXnFAXnUVXdf.tsv" ###### SORRY ABOUT THE VARIABLE NAMES CONSTANT ÑAPAS!
 FAXnUVXdf <- read.delim(FAXnUVXFile)
 
 FAXnUVXSingProts <- FAXnUVXdf[!grepl(";",FAXnUVXdf$proteinName),]; nrow(FAXnUVXSingProts)
@@ -163,6 +174,9 @@ FAXnUVXmapped2$geneName.ProteomeFAX <- FAXnUVXmapped2$GeneName
 
 FAXnUVXunmapped <- FAXnUVXunmapped[!(FAXnUVXunmapped$geneName.ProteomeFAX %in% yeastGenesProtMap$GeneName),]
 nrow(FAXnUVXunmapped)
+
+FAXnUVXmapped$GeneName[which(is.na(FAXnUVXmapped$GeneName))] <- FAXnUVXmapped$ORF[which(is.na(FAXnUVXmapped$GeneName))]
+FAXnUVXmapped2$GeneName[which(is.na(FAXnUVXmapped2$GeneName))] <- FAXnUVXmapped2$ORF[which(is.na(FAXnUVXmapped2$GeneName))]
 
 # FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)] 
 # View(FAXnUVXmapped[FAXnUVXmapped$UniprotACC %in% FAXnUVXmapped$UniprotACC[duplicated(FAXnUVXmapped$UniprotACC)],])
@@ -201,10 +215,12 @@ nrow(orthologsMapped)
 orthologsMappedMinInfo <- orthologsMapped[c("orthologsIDs", "proteinName", colnames(yeastGenesProtMap))]
 nrow(orthologsMappedMinInfo); #View(orthologsMappedMinInfo)
 
-require(dplyr)
-
+orthologsMappedMinInfo$GeneName[which(is.na(orthologsMappedMinInfo$GeneName))] <- orthologsMappedMinInfo$ORF[which(is.na(orthologsMappedMinInfo$GeneName))]
 
 orthologsMappedMinInfo[is.na(orthologsMappedMinInfo)] <- ""
+
+require(dplyr)
+
 orthologsCollapsed <- summarise_each(group_by(orthologsMappedMinInfo,orthologsIDs),funs(paste(., collapse = ";")))
 orthologsCollapsed <- orthologsCollapsed[order(orthologsCollapsed$orthologsIDs,decreasing = F),]
 nrow(orthologsCollapsed); #View(FAXnUVXOrthologs)
@@ -218,14 +234,17 @@ FAXnUVXfullMapped <- rbind(FAXnUVXmapped,FAXnUVXmapped2,orthologsFullMap)
 FAXnUVXfullMapped <- FAXnUVXfullMapped[,c(colnames(yeastGenesProtMap), colnames(FAXnUVXfullMapped)[!(colnames(FAXnUVXfullMapped) %in% colnames(yeastGenesProtMap))])]
 
 outdir <- "FinalData"
-saveTablesTsvExc(FAXnUVXfullMapped,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+protNOXnFAXnUVXfullMapped <- FAXnUVXfullMapped
+saveTablesTsvExc(protNOXnFAXnUVXfullMapped,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 ################################################################################
 ###################### MERGIN Transcriptome and FAXnUVX ########################
 ################################################################################
 
-FAXnUVXfullMapped <- read.delim("FinalData/FAXnUVXfullMapped.tsv",quote = "")
-intersect(colnames(DEGsMapped),colnames(FAXnUVXfullMapped))
+FAXnUVXfullMapped <- read.delim("FinalData/protNOXnFAXnUVXfullMapped.tsv",quote = "")
+DEGsMapped <- read.delim('FinalData/DEGsMapped.tsv',quote = "")
+
+DEGsMapped$GeneName[which(is.na(DEGsMapped$GeneName))] <- DEGsMapped$ORF[which(is.na(DEGsMapped$GeneName))]
 
 FAXnUVXfullMap <- FAXnUVXfullMapped[!grepl(";",FAXnUVXfullMapped$proteinName),]; nrow(FAXnUVXfullMap)
 FAXnUVXfullMapOrtho <- FAXnUVXfullMapped[grepl(";",FAXnUVXfullMapped$proteinName),]; nrow(FAXnUVXfullMapOrtho)
@@ -236,12 +255,18 @@ ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4
 toVennList <- list(DEGs = DEGsMapped$ORF, FAXnUVX = FAXnUVXfullMap$ORF)
 ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
 
+colnames(DEGsMapped)
+
+intersect(colnames(DEGsMapped),colnames(FAXnUVXfullMapped))
+
 DEGsnFAXnUVX <- merge(DEGsMapped,FAXnUVXfullMap,by="ORF",all = T)
 checkMerge <- as.data.frame(cbind(DEGsnFAXnUVX$Gene.Names.x,DEGsnFAXnUVX$Gene.Names.y))
 checkMerge <- checkMerge[complete.cases(checkMerge),]
 if (!identical(checkMerge$V1,checkMerge$V2)){
   View(as.data.frame(cbind(checkMerge$V1,checkMerge$V2))[checkMerge$V1!=checkMerge$V2,])
 }
+
+DEGsnFAXnUVX <- type.convert(DEGsnFAXnUVX)
 
 for (xCol in colnames(DEGsnFAXnUVX)[grep("\\.x",colnames(DEGsnFAXnUVX))]){
   yCol <- gsub("\\.x",".y",xCol)
@@ -254,13 +279,20 @@ library(plyr)
 allDataDF <- rbind.fill(DEGsnFAXnUVX,FAXnUVXfullMapOrtho)
 
 outdir <- "FinalData"
+firstCols <- intersect(colnames(DEGsMapped),colnames(FAXnUVXfullMapped))
+allDataDF <- allDataDF[c(firstCols,colnames(allDataDF)[!colnames(allDataDF) %in% firstCols])]
 saveTablesTsvExc(allDataDF,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 ### FINAL TABLES FOR IBTISSAM
 
+View(allDataDF)
+
 FAXacceptedProts <- read.delim("FinalData/BackgroundRemoval/FAXAccBackGrAcceptedFC3.tsv",header = F)[,1]
 UVXacceptedProts <- read.delim("FinalData/BackgroundRemoval/UVXAccBackGrAcceptedFC3.tsv",header = F)[,1]
-allDataDF <- read.delim("FinalData/allDataDF.tsv")
+allDataDF <- read.delim("FinalData/allDataDF.tsv",quote = "")
+
+### allDataDF$GeneName <- trimws(gsub(';;','',allDataDF$GeneName),whitespace = ';')
+
 
 FAXmRBP <- allDataDF[which((!is.na(allDataDF$RBPomeFAX.log2ratio_PolyARNAFAXwithSA))),]
 length(FAXmRBP$proteinName); length(unique(FAXmRBP$proteinName))
@@ -296,22 +328,27 @@ saveTablesTsvExc(UVXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownam
 
 cat(paste(colnames(FAXwoBKGR),collapse = "\n"))
 
+colnames(FAXwoBKGR)
+
 columnsSelected <-  c('seqnames','start','end','type','ORF','SGDID','GeneName','proteinName','UniprotACC',
                       'UniprotName','Gene.Names','Protein.names','Gene.Names..ordered.locus.',
                       'Gene.Names..ORF.','Gene.Names..primary.','Gene.Names..synonym.','Alias',
-                      'DEGs.H202.brep1.rawCounts','DEGs.H202.brep2.rawCounts','DEGs.H202.brep3.rawCounts',
-                      'DEGs.DTT.brep1.rawCounts','DEGs.DTT.brep2.rawCounts','DEGs.DTT.brep3.rawCounts',
-                      'DEGs.SA.brep1.rawCounts','DEGs.SA.brep2.rawCounts','DEGs.SA.brep3.rawCounts',
-                      'DEGs.YPD.brep1.rawCounts','DEGs.YPD.brep2.rawCounts','DEGs.YPD.brep3.rawCounts',
-                      'DEGs.adj.pval.H202-YPD','DEGs.log2FC.H202-YPD','DEGs.adj.pval.DTT-YPD',
-                      'DEGs.log2FC.DTT-YPD','DEGs.adj.pval.SA-YPD','DEGs.log2FC.SA-YPD','ProteomeFAX.X014_Pr40.DIA_DIA_D22',
+                      'DEGs.H202.brep1.TPMcounts','DEGs.H202.brep2.TPMcounts','DEGs.H202.brep3.TPMcounts',
+                      'DEGs.DTT.brep1.TPMcounts','DEGs.DTT.brep2.TPMcounts','DEGs.DTT.brep3.TPMcounts',
+                      'DEGs.SA.brep1.TPMcounts','DEGs.SA.brep2.TPMcounts','DEGs.SA.brep3.TPMcounts',
+                      'DEGs.YPD.brep1.TPMcounts','DEGs.YPD.brep2.TPMcounts','DEGs.YPD.brep3.TPMcounts',
+                      'DEGs.adj.pval.H202.YPD','DEGs.log2FC.H202.YPD','DEGs.adj.pval.DTT.YPD',
+                      'DEGs.log2FC.DTT.YPD','DEGs.adj.pval.SA.YPD','DEGs.log2FC.SA.YPD',
+                      'ProteomeFAX.X010_Pr40.DIA_DIA_D22','ProteomeFAX.X012_Pr40.DIA_DIA_D22','ProteomeFAX.X014_Pr40.DIA_DIA_D22',
                       'ProteomeFAX.X011_Pr40.DIA_DIA_D22','ProteomeFAX.X013_Pr40.DIA_DIA_D22',
                       'ProteomeFAX.X033_Pr40.DIA_DIA_D22','ProteomeFAX.X040_Pr40.DIA_DIA_D22',
                       'ProteomeFAX.X019_Pr40.DIA_DIA_D22','ProteomeFAX.X020_Pr40.DIA_DIA_D22',
                       'ProteomeFAX.X021_Pr40.DIA_DIA_D22','ProteomeFAX.log2ratio_FAXwithDTT','ProteomeFAX.log2ratio_FAXwithH2O2',
                       'ProteomeFAX.log2ratio_FAXwithSA','ProteomeFAX.pValue_FAXwithDTT','ProteomeFAX.pValue_FAXwithH2O2',
                       'ProteomeFAX.pValue_FAXwithSA','ProteomeFAX.qValue_FAXwithDTT','ProteomeFAX.qValue_FAXwithH2O2',
-                      'ProteomeFAX.qValue_FAXwithSA','RBPomeFAX.X026_PolyA.40_APMS_F21','RBPomeFAX.X023_PolyA.40_APMS_F21',
+                      'ProteomeFAX.qValue_FAXwithSA',
+                      'RBPomeFAX.X022_PolyA.40_APMS_F21','RBPomeFAX.X024_PolyA.40_APMS_F21',
+                      'RBPomeFAX.X026_PolyA.40_APMS_F21','RBPomeFAX.X023_PolyA.40_APMS_F21',
                       'RBPomeFAX.X025_PolyA.40_APMS_F21','RBPomeFAX.X027_PolyA.40_APMS_F21','RBPomeFAX.X005_PolyA.40_APMS_F21',
                       'RBPomeFAX.X038_PolyA.40_APMS_F21','RBPomeFAX.X031_PolyA.40_APMS_F21','RBPomeFAX.X032_PolyA.40_APMS_F21',
                       'RBPomeFAX.X033_PolyA.40_APMS_F21','RBPomeFAX.log2ratio_PolyARNAFAXwithDTT',
@@ -319,12 +356,14 @@ columnsSelected <-  c('seqnames','start','end','type','ORF','SGDID','GeneName','
                       'RBPomeFAX.pValue_PolyARNAFAXwithDTT','RBPomeFAX.pValue_PolyARNAFAXwithH2O2',
                       'RBPomeFAX.pValue_PolyARNAFAXwithSA','RBPomeFAX.qValue_PolyARNAFAXwithDTT','RBPomeFAX.qValue_PolyARNAFAXwithH2O2',
                       'RBPomeFAX.qValue_PolyARNAFAXwithSA','FAXnetchangesDTT','FAXnetchangesH2O2','FAXnetchangesSA',
+                      'ProteomeUVX.X008_Pr40.DIA_DIA_D22','ProteomeUVX.X027_Pr40.DIA_DIA_D22',
                       'ProteomeUVX.X038_Pr40.DIA_DIA_D22','ProteomeUVX.X005_Pr40.DIA_DIA_D22','ProteomeUVX.X007_Pr40.DIA_DIA_D22',
                       'ProteomeUVX.X009_Pr40.DIA_DIA_D22','ProteomeUVX.X028_Pr40.DIA_DIA_D22','ProteomeUVX.X035_Pr40.DIA_DIA_D22',
                       'ProteomeUVX.X022_Pr40.DIA_DIA_D22','ProteomeUVX.X024_Pr40.DIA_DIA_D22','ProteomeUVX.log2ratio_Condition2',
                       'ProteomeUVX.log2ratio_Condition3','ProteomeUVX.log2ratio_Condition4','ProteomeUVX.pValue_Condition2',
                       'ProteomeUVX.pValue_Condition3','ProteomeUVX.pValue_Condition4','ProteomeUVX.qValue_Condition2',
-                      'ProteomeUVX.qValue_Condition3','ProteomeUVX.qValue_Condition4','RBPomeUVX.X039_PolyA.40_APMS_F21',
+                      'ProteomeUVX.qValue_Condition3','ProteomeUVX.qValue_Condition4',
+                      'RBPomeUVX.X018_PolyA.40_APMS_F21','RBPomeUVX.X020_PolyA.40_APMS_F21','RBPomeUVX.X039_PolyA.40_APMS_F21',
                       'RBPomeUVX.X017_PolyA.40_APMS_F21','RBPomeUVX.X019_PolyA.40_APMS_F21','RBPomeUVX.X021_PolyA.40_APMS_F21',
                       'RBPomeUVX.X004_PolyA.40_APMS_F21','RBPomeUVX.X040_PolyA.40_APMS_F21','RBPomeUVX.X034_PolyA.40_APMS_F21',
                       'RBPomeUVX.X035_PolyA.40_APMS_F21','RBPomeUVX.X036_PolyA.40_APMS_F21','RBPomeUVX.log2ratio_PolyARNAUVwithDTT',
@@ -338,7 +377,18 @@ columnsSelected[!columnsSelected %in% colnames(UVXwoBKGR)]
 FAXwoBKGR <- FAXwoBKGR[,columnsSelected]
 UVXwoBKGR <- UVXwoBKGR[,columnsSelected]
 outdir <- "FinalData/TablesForPublication"
+
+colnames(FAXwoBKGR)<-gsub('Condition2','DTT',colnames(FAXwoBKGR))
+colnames(FAXwoBKGR)<-gsub('Condition3','H2O2',colnames(FAXwoBKGR))
+colnames(FAXwoBKGR)<-gsub('Condition4','SA',colnames(FAXwoBKGR))
+
+colnames(UVXwoBKGR)<-gsub('Condition2','DTT',colnames(UVXwoBKGR))
+colnames(UVXwoBKGR)<-gsub('Condition3','H2O2',colnames(UVXwoBKGR))
+colnames(UVXwoBKGR)<-gsub('Condition4','SA',colnames(UVXwoBKGR))
+
 saveTablesTsvExc(FAXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 saveTablesTsvExc(UVXwoBKGR,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
+
+
 
 

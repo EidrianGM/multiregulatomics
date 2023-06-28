@@ -112,18 +112,10 @@ write(belowbackgrProtsFAX,"FinalData/BackgroundRemoval/FAXAccBackGrRemovedFC3.ts
 write(belowbackgrProtsUVX,"FinalData/BackgroundRemoval/UVXAccBackGrRemovedFC3.tsv", sep = "\n")
 
 nrow(meanNOXfaxDF)
-<<<<<<< HEAD
-length(unique(meanNOXfaxDF$proteinName))
-=======
->>>>>>> 0bba9b2d5d7314edf74a01abebc3fb7da9ff2313
 length(abovebackgrProtsFAX)
 length(belowbackgrProtsFAX)
 
 nrow(meanNOXuvxDF)
-<<<<<<< HEAD
-length(unique(meanNOXuvxDF$proteinName))
-=======
->>>>>>> 0bba9b2d5d7314edf74a01abebc3fb7da9ff2313
 length(abovebackgrProtsUVX)
 length(belowbackgrProtsUVX)
 
@@ -151,7 +143,6 @@ toVennList <- list(UVXproteins = UVXdf$proteinName, meanUVXacceptedBGprots = abo
 ggvennSA <- ggVennDiagram(toVennList, color = 2, lwd = 0.7) + scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") + theme(legend.position = "none")
 nameOut <- paste0("FinalData/BackgroundRemoval/UVX_ACCEPTEDbackground_FC",FCcutOff,"_venn.png")
 ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
-
 
 nPeps <- length(peptidesInfo$Accession) - nPepsOrth
 nProts <- length(unique(peptidesInfo$Accession)) - nProtsOrth
@@ -269,7 +260,107 @@ tiff(file.path(outdir,paste0(gsub("\ ", "",tagname),'HeatMapClustered.tiff')), 1
 draw(myHMPplot, heatmap_legend_side="bottom", annotation_legend_side = "left")
 dev.off()
 
+#### 3) Table with Non Normalised Values from RBPome detected and the background control.
+
+NOXrbpomeFile <- '/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/correctedRAW/NOXmRBPomeRAW.csv'
+FAXrbpomeFile <- '/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/correctedRAW/FAXmRBPomeRAW.csv'
+UVXrbpomeFile <- '/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/FinalData/Raw/correctedRAW/UVXmRBPomeRAW.csv'
+
+NOXrbpomeDF <- getProteinsMatrixFromRAW(NOXrbpomeFile)
+FAXrbpomeDF <- getProteinsMatrixFromRAW(FAXrbpomeFile)
+UVXrbpomeDF <- getProteinsMatrixFromRAW(UVXrbpomeFile)
+
+colnames(NOXrbpomeDF) <- paste(colnames(NOXrbpomeDF),'NOXraw', sep = '_')
+colnames(NOXrbpomeDF)[1] <- 'proteins'
+colnames(FAXrbpomeDF) <- paste(colnames(FAXrbpomeDF),'FAXraw', sep = '_')
+colnames(FAXrbpomeDF)[1] <- 'proteins'
+colnames(UVXrbpomeDF) <- paste(colnames(UVXrbpomeDF),'UVXraw', sep = '_')
+colnames(UVXrbpomeDF)[1] <- 'proteins'
+
+FAXnUVXdf <- merge(FAXrbpomeDF,UVXrbpomeDF,by = "proteins",all = T)
+NOXnFAXnUVXdf <- merge(NOXrbpomeDF,FAXnUVXdf,by = "proteins",all = T)
+
+meanNOXfaxFile <- "FinalData/Raw/correctedRAW/meanRBPomeNOX_FAX_np2_NOnorm/meanRBPomeNOX_FAX_np2_NOnorm_PROTEIN.tsv"
+meanNOXuvxFile <- "FinalData/Raw/correctedRAW/meanRBPomeNOX_UVX_np2_NOnorm/meanRBPomeNOX_UVX_np2_NOnorm_PROTEIN.tsv"
+meanNOXfaxDF <- read.delim(meanNOXfaxFile)[c('proteinName','log2ratio_Condition2')]
+colnames(meanNOXfaxDF) <- c('proteins','log2ratio_FAX')
+meanNOXuvxDF <- read.delim(meanNOXuvxFile)[c('proteinName','log2ratio_Condition2')]
+colnames(meanNOXuvxDF) <- c('proteins','log2ratio_UVX')
+
+NOXnFAXnUVX_withFAXlog2 <- merge(NOXnFAXnUVXdf,meanNOXfaxDF,all = T)
+NOXnFAXnUVX_withFAXnUVXlog2 <- merge(NOXnFAXnUVX_withFAXlog2,meanNOXuvxDF,all = T)
+
+table(gsub('.x|.y','',colnames(NOXnFAXnUVX_withFAXnUVXlog2)))
+
+outdir <- 'FinalData/BackgroundRemoval'
+saveTablesTsvExc(NOXnFAXnUVX_withFAXnUVXlog2,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 
+#### MAP IT
+NOXnFAXnUVX_withFAXnUVXlog2 <- read.delim('FinalData/BackgroundRemoval/NOXnFAXnUVX_withFAXnUVXlog2.tsv',quote = '')
 
+mappingFinalFile <- "yeastReference/mappingFile.xlsx"
+yeastGenesProtMap <- read.xlsx(mappingFinalFile)
+yeastGenesProtMap[which(yeastGenesProtMap$GeneName == 'REP2'),]$UniprotACC <- 'P03872'
+
+FAXnUVXdf <- NOXnFAXnUVX_withFAXnUVXlog2 
+colnames(FAXnUVXdf)[1] <- 'proteinName'
+
+FAXnUVXSingProts <- FAXnUVXdf[!grepl(";",FAXnUVXdf$proteinName),]; nrow(FAXnUVXSingProts)
+
+FAXnUVXmapped <- merge(yeastGenesProtMap,FAXnUVXSingProts,by.x = "UniprotACC", by.y = "proteinName")
+FAXnUVXmapped$proteinName <- FAXnUVXmapped$UniprotACC
+nrow(FAXnUVXSingProts); nrow(FAXnUVXmapped)
+
+FAXnUVXunmapped <- FAXnUVXSingProts[!(FAXnUVXSingProts$proteinName %in% yeastGenesProtMap$UniprotACC),]
+
+FAXnUVXmapped$GeneName[which(is.na(FAXnUVXmapped$GeneName))] <- FAXnUVXmapped$ORF[which(is.na(FAXnUVXmapped$GeneName))]
+
+FAXnUVXOrthologs <- FAXnUVXdf[grepl(";",FAXnUVXdf$proteinName),]; nrow(FAXnUVXOrthologs)
+FAXnUVXOrthologs$orthologsIDs <- 1:nrow(FAXnUVXOrthologs)
+
+sepFAXnUVXOrthologs <- separate_rows(FAXnUVXOrthologs, proteinName, sep = ";", convert = FALSE)
+nrow(FAXnUVXOrthologs); nrow(sepFAXnUVXOrthologs)
+sepFAXnUVXOrthologsMapped <- merge(yeastGenesProtMap,sepFAXnUVXOrthologs,by.x = "UniprotACC", by.y = "proteinName")
+
+sepFAXnUVXOrthologsMapped$proteinName <- sepFAXnUVXOrthologsMapped$UniprotACC
+nrow(sepFAXnUVXOrthologs); nrow(sepFAXnUVXOrthologsMapped)
+sepFAXnUVXOrthologsUnmapped <- sepFAXnUVXOrthologs[!(sepFAXnUVXOrthologs$proteinName %in% yeastGenesProtMap$UniprotACC),]
+
+sepFAXnUVXOrthologsUnmapped$proteinName <- gsub("-2","",sepFAXnUVXOrthologsUnmapped$proteinName)
+sepFAXnUVXOrthologsMapped2 <- merge(yeastGenesProtMap,sepFAXnUVXOrthologsUnmapped,by.x = "UniprotACC", by.y = "proteinName")
+
+sepFAXnUVXOrthologsUnmapped <- sepFAXnUVXOrthologsMapped2[!(sepFAXnUVXOrthologsMapped2$proteinName %in% yeastGenesProtMap$UniprotACC),]
+nrow(sepFAXnUVXOrthologsUnmapped)
+
+sepFAXnUVXOrthologsMapped2$UniprotACC <- paste0(sepFAXnUVXOrthologsMapped2$UniprotACC,"-2")
+sepFAXnUVXOrthologsMapped2$proteinName <- sepFAXnUVXOrthologsMapped2$UniprotACC
+
+orthologsMapped <- rbind(sepFAXnUVXOrthologsMapped,sepFAXnUVXOrthologsMapped2)
+orthologsMapped <- orthologsMapped[!duplicated(orthologsMapped),]
+
+orthologsMappedMinInfo <- orthologsMapped[c("orthologsIDs", "proteinName", colnames(yeastGenesProtMap))]
+sum(is.na(orthologsMappedMinInfo$GeneName))
+
+orthologsMappedMinInfo$GeneName[which(is.na(orthologsMappedMinInfo$GeneName))] <- orthologsMappedMinInfo$ORF[which(is.na(orthologsMappedMinInfo$GeneName))]
+
+nrow(orthologsMappedMinInfo); #View(orthologsMappedMinInfo)
+
+orthologsMappedMinInfo[is.na(orthologsMappedMinInfo)] <- ""
+orthologsCollapsed <- summarise_each(group_by(orthologsMappedMinInfo,orthologsIDs),funs(paste(., collapse = ";")))
+orthologsCollapsed <- orthologsCollapsed[order(orthologsCollapsed$orthologsIDs,decreasing = F),]
+nrow(orthologsCollapsed); #View(FAXnUVXOrthologs)
+
+orthologsFullMap <- merge(orthologsCollapsed,FAXnUVXOrthologs,by="orthologsIDs")
+orthologsFullMap$proteinName.x <- NULL 
+orthologsFullMap$orthologsIDs <- NULL
+colnames(orthologsFullMap)[17] <- gsub("\\.y","",colnames(orthologsFullMap)[17])
+
+FAXnUVXfullMapped <- rbind(FAXnUVXmapped,orthologsFullMap)
+FAXnUVXfullMapped <- FAXnUVXfullMapped[,c(colnames(yeastGenesProtMap), colnames(FAXnUVXfullMapped)[!(colnames(FAXnUVXfullMapped) %in% colnames(yeastGenesProtMap))])]
+
+NOXnFAXnUVX_withFAXnUVXlog2Mapped <- FAXnUVXfullMapped
+outdir <- 'FinalData/BackgroundRemoval'
+NOXnFAXnUVX_withFAXnUVXlog2Mapped <- NOXnFAXnUVX_withFAXnUVXlog2Mapped[!duplicated(NOXnFAXnUVX_withFAXnUVXlog2Mapped),]
+saveTablesTsvExc(NOXnFAXnUVX_withFAXnUVXlog2Mapped,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 

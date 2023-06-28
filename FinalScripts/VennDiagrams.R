@@ -1,5 +1,71 @@
 library(ggVennDiagram)
 library(ggplot2)
+
+## Number of proteins detected in NOX, UVX and FAX in Proteome, for each stress 
+## condition at least one reading per sample of the same class
+Proteomefile <- "FinalData/Raw/correctedRAW/newProteome.csv"
+ProteomeSamplesInfo <- read.delim(Proteomefile,nrows = 3, sep = ",")
+myDF <- ProteomeSamplesInfo
+normDCol <- grep("Norm",colnames(myDF)) # Raw Normalized Values are not the ones!
+rawDCol <- grep("Raw",colnames(myDF))
+expresionMatrix <- myDF[normDCol:(rawDCol-1)] 
+expresionMatrix[2,] <- gsub("_.*","",expresionMatrix[2,])
+phenData <- as.data.frame(t(expresionMatrix[1:2,])); colnames(phenData) <- c("class","id"); 
+phenData$class <- gsub(".*\\s","",phenData$class); conditionCol <- "class"
+rownames(phenData) <- 1:nrow(phenData)
+
+ProteomeDF <- read.delim(Proteomefile,skip = 3, sep = ",",header = F)
+expresionMatrix <- ProteomeDF[c(11,normDCol:(rawDCol-1))] 
+colnames(expresionMatrix) <- c('protein',phenData$id)
+expresionMatrix <- expresionMatrix[3:nrow(expresionMatrix),]
+
+expresionMatrix$protein
+
+phenData$class <- gsub("no.*",'',phenData$class)
+
+totalProteins <- unique(expresionMatrix$protein); length(totalProteins)
+proteinsDetectionPerClass <- list()
+for (myclass in unique(phenData$class)){
+  mySubExprMatrix <- expresionMatrix[phenData$id[phenData$class == myclass]]
+  proteinsDetected <- unique(expresionMatrix$protein[which(rowSums(is.na(mySubExprMatrix)) != ncol(mySubExprMatrix))])
+  proteinsDetectionPerClass[[myclass]] <- proteinsDetected
+}
+View(proteinsDetectionPerClass)
+unique(phenData$class)
+
+toVennListControls <- list(NOX = proteinsDetectionPerClass[['NOX']], UVX = proteinsDetectionPerClass[['UV']], FAX=proteinsDetectionPerClass[['FAX']])
+toVennListDTT <- list(NOX = proteinsDetectionPerClass[['NOXwithDTT']], UVX = proteinsDetectionPerClass[['UVwithDTT']], FAX=proteinsDetectionPerClass[['FAXwithDTT']])
+toVennListH202 <- list(NOX = proteinsDetectionPerClass[['NOXwithH2O2']], UVX = proteinsDetectionPerClass[['UVwithH202']], FAX=proteinsDetectionPerClass[['FAXwithH2O2']])
+toVennListSA <- list(NOX = proteinsDetectionPerClass[['NOXwithSA']], UVX = proteinsDetectionPerClass[['UVwithSA']], FAX=proteinsDetectionPerClass[['FAXwithSA']])
+
+ggvennControls <- ggVennDiagram(toVennListControls, color = 2, lwd = 0.7) + 
+            scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+            theme(legend.position = "none")
+nameOut <- "FinalData/QualityControlPlots/ProteomeProteinsDetectedVenns/Controls.png"
+ggsave(filename = nameOut, plot = ggvennControls, width = 30, height = 15, units = 'cm', dpi = 'print')
+
+ggvennDTT <- ggVennDiagram(toVennListDTT, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "FinalData/QualityControlPlots/ProteomeProteinsDetectedVenns/DTT.png"
+ggsave(filename = nameOut, plot = ggvennDTT, width = 30, height = 15, units = 'cm', dpi = 'print')
+
+ggvennH202 <- ggVennDiagram(toVennListH202, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "FinalData/QualityControlPlots/ProteomeProteinsDetectedVenns/H2O2.png"
+ggsave(filename = nameOut, plot = ggvennH202, width = 30, height = 15, units = 'cm', dpi = 'print')
+
+ggvennSA <- ggVennDiagram(toVennListSA, color = 2, lwd = 0.7) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  theme(legend.position = "none")
+nameOut <- "FinalData/QualityControlPlots/ProteomeProteinsDetectedVenns/SA.png"
+ggsave(filename = nameOut, plot = ggvennSA, width = 30, height = 15, units = 'cm', dpi = 'print')
+
+
+################# 
+
+
 RBPomeUVXAdriFile <- "/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/data/raw/RBPomeUVX_np2_norm_gmin_no10-7-16-3/RBPomeUVX_np2_norm_gmin_no10-7-16-3_PROTEIN.tsv"
 RBPomeUVXAdriDF <- read.delim(RBPomeUVXAdriFile,quote = '"',check.names = T)
 colnames(RBPomeUVXAdriDF) <- gsub("\\.$","",gsub("X.","",colnames(RBPomeUVXAdriDF)))
@@ -90,3 +156,11 @@ FAXnUVXvennDF <- FAXnUVXdf
 saveTablesTsvExc(FAXnUVXvennDF,outdir,completeNdedup=F,excel=T,bycompleteFC=F,rownames=F)
 
 FAXnUVXvennDF$proteinName[FAXnUVXvennDF$proteinName %in% FAXnUVXvennDF$proteinName[duplicated(FAXnUVXvennDF$proteinName)]]
+
+
+
+
+
+
+
+

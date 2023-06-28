@@ -1,5 +1,6 @@
 # Load libraries
 setwd("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/")
+library(openxlsx)
 # library(ggVennDiagram)
 # library(Biobase)
 # library(limma)
@@ -9,7 +10,6 @@ setwd("/home/eidriangm/Desktop/toDo/surrey/multiregulatomics/")
 # library("scatterplot3d")
 # library(RColorBrewer)
 # library(ggfortify)
-library(openxlsx)
 # library(EnhancedVolcano)
 # library(stringr)
 # library(gdata)
@@ -99,3 +99,17 @@ completeNdedup <- function(DF){
   }
 }
 
+getProteinsMatrixFromRAW <- function(omeFile){
+  myDF <- read.delim(omeFile,sep = ',')
+  rawDCol <- grep("Raw",colnames(myDF)) # Raw Normalized Values are not the ones!
+  specDCol <- grep("Spectral",colnames(myDF))
+  expresionMatrix <- myDF[rawDCol:(specDCol-1)] 
+  samplesNames <- paste(gsub("_.*","",expresionMatrix[2,]),gsub(".*\\s","",expresionMatrix[1,]),sep = '_')
+  colnames(expresionMatrix) <- samplesNames
+  expresionMatrix <- expresionMatrix[3:nrow(expresionMatrix),]
+  expresionMatrix[is.na(expresionMatrix)] <- 0
+  expresionMatrix <- type.convert(expresionMatrix)
+  expresionMatrixProteins <- aggregate(expresionMatrix, by=list(myDF$X.10[3:nrow(myDF)]), FUN = sum)
+  colnames(expresionMatrixProteins)[1] <- 'proteins'
+  return(expresionMatrixProteins)
+}

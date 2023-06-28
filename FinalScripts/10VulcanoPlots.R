@@ -1,6 +1,16 @@
 library(EnhancedVolcano)
 source("FinalScripts/functionOmics.R")
 
+completeNdedup <- function(DF){
+  if (class(DF) == "data.frame"){
+    DF <- DF[complete.cases(DF),]
+    DF <- DF[!duplicated(DF),]
+    return(DF)
+  }else{
+    return(unique(na.omit(DF)))
+  }
+}
+
 wholeDFFile <- "FinalData/allDataDF.tsv"
 wholeDF <- read.delim(wholeDFFile,quote = "")
 
@@ -29,23 +39,18 @@ phenoData <- data.frame(datatype=c(rep("Transcriptome",3),rep(c("Proteome","RBPo
                         treatment=c(c("DTT","H2O2","SA"),rep(c(rep("DTT",3),rep("H2O2",3),rep("SA",3)),2)),
                         crosslink=c(rep("DEGs",3),rep("FAX",3*3),rep("UVX",3*3)))
 
-subDF <- completeNdedup(wholeDF[,c(fcColumns[1],pvalsCols[1])])
-colnames(subDF) <- c("log2FoldChange","FDR")
-
 limsData <- c()
 
 SELpvalsCols <- pvalsCols[grep("SA|Condition4",fcColumns)]
 SELfcColumns <- fcColumns[grep("SA|Condition4",fcColumns)]
 subphenoData <- phenoData[phenoData$treatment == 'SA',]
 
-mysubDF <- wholeDF[which(wholeDF$proteinName %in% UVXacceptedProts),c('proteinName',SELfcColumns[idx],SELpvalsCols[idx])]
+View(subphenoData)
 
-length(mysubDF$proteinName)
-length(unique(mysubDF$proteinName))
-
+idx <- 2
 for (idx in 1:length(SELfcColumns)){
   outName <- paste0(rev(subphenoData[idx,]),collapse = "")
-  outdir <- "FinalData/EnrichmentResults/Visualizations/VulcanoPlots"
+  outdir <- "FinalData/VulcanoPlots"
   if (grepl("Transc",outName)){
     pvalCutOff <- 0.01
     FCcutoff <- 3
@@ -53,13 +58,18 @@ for (idx in 1:length(SELfcColumns)){
     pvalCutOff <- 0.05
     FCcutoff <- 1
   }
-  if (grepl("FAX", outName)){
-    subDF <- completeNdedup(wholeDF[which(wholeDF$proteinName %in% FAXacceptedProts),c(SELfcColumns[idx],SELpvalsCols[idx])])
-  }else if(grepl("UVX", outName)){
-    subDF <- completeNdedup(wholeDF[which(wholeDF$proteinName %in% UVXacceptedProts),c(SELfcColumns[idx],SELpvalsCols[idx])])
+  if (grepl("FAX", outName) & (grepl("RBPome", outName)  | grepl("NetCha", outName))){
+    subDF <- wholeDF[which(wholeDF$proteinName %in% FAXacceptedProts),c('proteinName',SELfcColumns[idx],SELpvalsCols[idx])]
+  }else if (grepl("UVX", outName) & (grepl("RBPome", outName)  | grepl("NetCha", outName))){
+    subDF <- wholeDF[which(wholeDF$proteinName %in% UVXacceptedProts),c('proteinName',SELfcColumns[idx],SELpvalsCols[idx])]
+  }else if (grepl("Proteome", outName)){
+    subDF <- wholeDF[,c('proteinName',SELfcColumns[idx],SELpvalsCols[idx])]
   }else{
-    subDF <- completeNdedup(wholeDF[,c(SELfcColumns[idx],SELpvalsCols[idx])])
+    subDF <- wholeDF[,c('UniprotACC',SELfcColumns[idx],SELpvalsCols[idx])]
   }
+  subDF <- completeNdedup(subDF)
+  print(paste(outName,nrow(subDF)))
+  subDF[,1] <- NULL
   if (grepl("NetChanges", outName)){
     xLabel <- "NetChanges"
     yLabel <- "mRBPFDR"

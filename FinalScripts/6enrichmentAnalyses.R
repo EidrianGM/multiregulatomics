@@ -42,31 +42,30 @@ doGC4ORA <- function(dirWithGeneLists,mycustomUniverse=list(),outtag='',ortholog
   }
 }
 
-SAdegsGSEAFile <- "FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
-SAProteomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeFAXgsea.tsv"
-SARBPomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeFAXgsea.tsv"
-SAnetchangesFAXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesFAXgsea.tsv"
-SAProteomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeUVXgsea.tsv"
-SARBPomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeUVXgsea.tsv"
-SAnetchangesUVXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesUVXgsea.tsv"
-
-myfiles <- c(SAdegsGSEAFile,SAnetchangesFAXgseaFile,SAProteomeFAXgseaFile,SARBPomeFAXgseaFile, 
-             SAnetchangesUVXgseaFile,SARBPomeUVXgseaFile)
-# myfiles should have the same order as GSAlists
-mycustomUniverse <- lapply(myfiles, function(x){unique(unlist(strsplit(read.delim(x)[,1],";")))})
-names(mycustomUniverse) <- gsub('.tsv','',basename(myfiles))
-
-dirWithGeneLists <- "FinalData/GeneLists/ORA"
-GSAlists <- list.files(dirWithGeneLists,pattern = "*.txt",all.files = T,full.names = T)
-gsub('.txt','',basename(GSAlists))
-names(mycustomUniverse)
-
-names(mycustomUniverse) <- gsub('.txt','',basename(GSAlists))
-outtag <- '.customREF'
-doGC4ORA(dirWithGeneLists,mycustomUniverse,outtag)
+# SAdegsGSEAFile <- "FinalData/GeneLists/GSEA/SAdegsGSEA.tsv"
+# SAProteomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeFAXgsea.tsv"
+# SARBPomeFAXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeFAXgsea.tsv"
+# SAnetchangesFAXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesFAXgsea.tsv"
+# SAProteomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SAProteomeUVXgsea.tsv"
+# SARBPomeUVXgseaFile <- "FinalData/GeneLists/GSEA/SARBPomeUVXgsea.tsv"
+# SAnetchangesUVXgseaFile <- "FinalData/GeneLists/GSEA/SAnetchangesUVXgsea.tsv"
+# 
+# myfiles <- c(SAdegsGSEAFile,SAnetchangesFAXgseaFile,SAProteomeFAXgseaFile,SARBPomeFAXgseaFile, 
+#              SAnetchangesUVXgseaFile,SARBPomeUVXgseaFile)
+# # myfiles should have the same order as GSAlists
+# mycustomUniverse <- lapply(myfiles, function(x){unique(unlist(strsplit(read.delim(x)[,1],";")))})
+# names(mycustomUniverse) <- gsub('.tsv','',basename(myfiles))
+# dirWithGeneLists <- "FinalData/GeneLists/ORA"
+# GSAlists <- list.files(dirWithGeneLists,pattern = "*.txt",all.files = T,full.names = T)
+# gsub('.txt','',basename(GSAlists))
+# names(mycustomUniverse)
+# names(mycustomUniverse) <- gsub('.txt','',basename(GSAlists))
+# outtag <- '.customREF'
+# doGC4ORA(dirWithGeneLists,mycustomUniverse,outtag)
 
 outtag <- ''
 doGC4ORA(dirWithGeneLists)
+
 
 ################################################################################
 ################################# 2. GSEA  #####################################

@@ -31,7 +31,7 @@ getIDsList <- function(DF,logicalRows,ID, keep=c()){
   }else{
     DF <- DF[!duplicated(DF),]
     print(paste(nrow(DF),"are significant")) 
-    if (length(keep) != 0){
+    if (length(keep) > 0){
       cat("Removed by back ",sum(!DF[,ID] %in% keep))
       DF <- DF[DF[,ID] %in% keep,]
       print(paste(nrow(DF)," are remaining")) 
@@ -44,8 +44,7 @@ getIDsList <- function(DF,logicalRows,ID, keep=c()){
 SAdegsQSig <- wholeDF$DEGs.adj.pval.SA.YPD < DEGpvalCut
 SAdegsUpFC <- wholeDF$DEGs.log2FC.SA.YPD > DEGFCCut
 SAdegsDwFC <- wholeDF$DEGs.log2FC.SA.YPD < -DEGFCCut
-
-SADEGs <- getIDsList(wholeDF,which(SAdegsQSig),DEGsIDs)
+SADEGs <- getIDsList(wholeDF,which(SAdegsQSig),DEGsIDs) # DEGsIDs <- 'DEGs.target'
 SADEGsUpFC <- getIDsList(wholeDF,which(SAdegsQSig & SAdegsUpFC),DEGsIDs)
 SADEGsDwFC <- getIDsList(wholeDF,which(SAdegsQSig & SAdegsDwFC),DEGsIDs)
 
@@ -146,7 +145,7 @@ getGSEArankDF <- function(DF,dataype,crosslink,treatment,IDs,rankCol="log2", kee
   DF <- DF[!duplicated(DF),]
   DF <- DF[complete.cases(DF),]
   print(paste(nrow(DF),"to GSEA"))
-  if (length(keep) != 0){
+  if (length(keep) > 0){
     cat("Removed by back ",sum(!DF[,IDs] %in% keep))
     DF <- DF[DF[,IDs] %in% keep,]
     print(paste(nrow(DF)," are remaining")) 
@@ -156,6 +155,7 @@ getGSEArankDF <- function(DF,dataype,crosslink,treatment,IDs,rankCol="log2", kee
 outdir <- "FinalData/GeneLists/GSEA"
 DF <- wholeDF
 
+DEGsIDs <- 'UniprotACC'
 dataype <- "DEGs"; crosslink <- ""; treatment <- "SA"
 SAdegsGSEA <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,DEGsIDs)
 saveTablesTsvExc(SAdegsGSEA,outdir,completeNdedup = T,excel = F,bycompleteFC = F,rownames = F)
@@ -183,56 +183,64 @@ SAnetchangesUVXgsea <- getGSEArankDF(wholeDF,dataype,crosslink,treatment,ProtIDs
 saveTablesTsvExc(SAnetchangesUVXgsea,outdir,completeNdedup = F,excel = F,bycompleteFC = F,rownames = F)
 
 
-DEGpvalCut <- 0.01
-DEGFCCut <- 3
-protsPvalCut <- 0.05
-fcCut   <- 1
-
 outdir <- "FinalData/GeneLists/ORA"
 files <- list.files(outdir,pattern = "*.txt",full.names = T)
 outdir <- "FinalData/GeneLists/GSEA"
 files <- c(files, list.files(outdir,pattern = "*.tsv",full.names = T))
+
 stats <- c()
 upreg <- "-"; downreg <- "-"
-file <- files[7]
-
 for (file in files){
   enrchTec <- gsub(".*/","",dirname(file)) 
   dataype <- gsub("\\..*","",basename(file))
+  if (grepl('degs',dataype,ignore.case = T)) {
+    fcCut <- 3; pvalCut <- 0.01
+  }else{
+    fcCut <- 1; pvalCut <- 0.05
+  }
   if (enrchTec == "GSEA"){
+    pvalCut <- "-"
     degs <- read.delim(file)  
-    if (grepl('degs',dataype,ignore.case = T)) {
-      fcCut <- 3; pvalCut <- "-"
-      upreg <- degs[which(degs[,2] > fcCut),1]
-      downreg <- degs[which(degs[,2] < -fcCut),1]
-    }else{
-      fcCut <- 1; pvalCut <- "-"
-      upreg <- degs[which(degs[,2] > fcCut),1]
-      downreg <- degs[which(degs[,2] < -fcCut),1]
-    }
-    nsiggenes <- nrow(degs)
+    northologspep <- sum(grepl(';',degs[,1]))
+    singleprots <- sum(!grepl(';',degs[,1]))
+    upreg <- degs[which(degs[,2] > fcCut),1]
+    downreg <- degs[which(degs[,2] < -fcCut),1]
     upregorthologspep <- sum(grepl(";",upreg))
     downregorthologspep <- sum(grepl(";",downreg))
     upreg <- length(upreg) - upregorthologspep
     downreg <- length(downreg) - downregorthologspep
-    northologspep <- upregorthologspep + downregorthologspep
+    #northologspep <- upregorthologspep + downregorthologspep
+    sigleuniprots <- nrow(degs) - northologspep
+    singleprots == sigleuniprots
   }else{
-    if (grepl('degs',dataype,ignore.case = T)) {
-      fcCut <- 3; pvalCut <- 0.01
-    }else{
-      fcCut <- 1; pvalCut <- 0.05
-    }
     degs <- read.delim(file,header = F)  
     northologspep <- sum(grepl(";",degs[,1]))
-    nsiggenes <- nrow(degs) - northologspep
+    sigleuniprots <- nrow(degs) - northologspep
     upregorthologspep <- downregorthologspep <- '-'
   }
-  stats <- rbind(stats,cbind(enrchTec,dataype,nsiggenes,northologspep,
+  total <- nrow(degs)
+  stats <- rbind(stats,cbind(enrchTec,dataype,total,sigleuniprots,northologspep,
                              fcCut,pvalCut,upreg,downreg,
                              upregorthologspep,downregorthologspep))
 }
 stats <- as.data.frame(stats)
-View(stats)
 outdir <- "FinalData/GeneLists"
 saveTablesTsvExc(stats,outdir,completeNdedup = F,excel = T,bycompleteFC = F,rownames = F)
+
+View(stats)
+
+wholeDFFile <- "FinalData/allDataDF.tsv"
+wholeDF <- read.delim(wholeDFFile,quote = "")
+
+sum(na.omit(wholeDF$DEGs.adj.pval.SA.YPD) < 0.01)
+sum(na.omit(wholeDF$ProteomeFAX.qValue_FAXwithSA) < 0.05)
+sum(na.omit(wholeDF$ProteomeUVX.qValue_Condition4) < 0.05)
+sum(na.omit(wholeDF$RBPomeFAX.qValue_PolyARNAFAXwithSA) < 0.05)
+sum(na.omit(wholeDF$RBPomeUVX.qValue_PolyARNAUVwithSA) < 0.05)
+
+pvalsignificants <- c(sum(na.omit(wholeDF$DEGs.adj.pval.SA.YPD) < 0.01),
+                      sum(na.omit(wholeDF$ProteomeFAX.qValue_FAXwithSA) < 0.05),
+                      sum(na.omit(wholeDF$ProteomeUVX.qValue_Condition4) < 0.05),
+                      sum(na.omit(wholeDF$RBPomeFAX.qValue_PolyARNAFAXwithSA) < 0.05),
+                      sum(na.omit(wholeDF$RBPomeUVX.qValue_PolyARNAUVwithSA) < 0.05))
 

@@ -54,3 +54,6 @@ QualityControl/
 *.png
 FinalData/
 *.tsv
+*.txt
+*.pdf
+*.odt
